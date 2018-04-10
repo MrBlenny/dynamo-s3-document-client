@@ -24,7 +24,7 @@ it('deletes a document (small - dynamo)', async () => {
     });
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
     clients: {
       dynamo: new AWS.DynamoDB.DocumentClient(),
       s3: new AWS.S3(),
@@ -32,7 +32,7 @@ it('deletes a document (small - dynamo)', async () => {
     bucketName,
   });
 
-  const result = await DynamoS3DocumentClient.delete({
+  const result = await dynamoS3DocumentClient.delete({
     Key: {
       Path: path,
     },
@@ -77,7 +77,7 @@ it('deletes a document (large - S3)', async () => {
     return callback(null, {});
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
     clients: {
       dynamo: new AWS.DynamoDB.DocumentClient(),
       s3: new AWS.S3(),
@@ -85,7 +85,7 @@ it('deletes a document (large - S3)', async () => {
     bucketName,
   });
 
-  const result = await DynamoS3DocumentClient.delete({
+  const result = await dynamoS3DocumentClient.delete({
     Key: {
       Path: path,
     },

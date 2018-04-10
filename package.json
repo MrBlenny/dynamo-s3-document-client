@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/lodash": "^4.14.106",
     "aws-sdk": "^2.205.0",
+    "aws-sdk-mock": "^1.7.0",
     "lodash": "^4.17.5"
   },
   "repository": {
@@ -19,6 +20,7 @@
     "url": "https://github.com/MrBlenny/dynamo-s3-document-client"
   },
   "devDependencies": {
+    "jest": "^22.4.3",
     "tslint": "^5.9.1",
     "typescript": "2.6"
   }

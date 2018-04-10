@@ -53,11 +53,13 @@ export class DynamoS3DocumentClient {
   config: IDynamoS3DocumentClientConfigDefaulted;
   constructor(config: IDynamoS3DocumentClientConfig) {
     // Set config and defaults
-    this.config = config;
-    this.config.contentPath = config.contentPath || 'Content';
-    this.config.s3KeyPath = config.s3KeyPath || 'Attributes.S3Key';
-    this.config.pathPath = config.pathPath || 'Path';
-    this.config.maxDocumentSize = config.maxDocumentSize || 5 * 1024 * 1024;
+    this.config = {
+      ...config,
+      contentPath: config.contentPath || 'Content',
+      s3KeyPath: config.s3KeyPath || 'Attributes.S3Key',
+      pathPath: config.pathPath || 'Path',
+      maxDocumentSize: config.maxDocumentSize || 5 * 1024 * 1024,
+    };
   }
   // Method Summary
   batchGet = this.config.clients.dynamo.batchGet;
@@ -130,6 +132,7 @@ export class DynamoS3DocumentClient {
       const path = get(dynamoData, this.config.pathPath);
 
       const undoSendToDynamo = () => this.delete({
+        TableName: params.TableName,
         Key: {
           Path: path,
         },

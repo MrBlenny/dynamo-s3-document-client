@@ -26,7 +26,7 @@ it('puts a document (small - dynamo)', async () => {
     });
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
     clients: {
       dynamo: new AWS.DynamoDB.DocumentClient(),
       s3: new AWS.S3(),
@@ -34,7 +34,7 @@ it('puts a document (small - dynamo)', async () => {
     bucketName,
   });
 
-  const result = await DynamoS3DocumentClient.put({
+  const result = await dynamoS3DocumentClient.put({
     Key: {
       Path: path,
     },
@@ -77,7 +77,7 @@ it('puts a document (large - S3)', async () => {
     });
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
     clients: {
       dynamo: new AWS.DynamoDB.DocumentClient(),
       s3: new AWS.S3(),
@@ -85,7 +85,7 @@ it('puts a document (large - S3)', async () => {
     bucketName,
   });
 
-  const result = await DynamoS3DocumentClient.put({
+  const result = await dynamoS3DocumentClient.put({
     Key: {
       Path: path,
     },

@@ -59,7 +59,7 @@ it('gets a document (S3)', async () => {
     });
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
     clients: {
       dynamo: new AWS.DynamoDB.DocumentClient(),
       s3: new AWS.S3(),
@@ -67,7 +67,7 @@ it('gets a document (S3)', async () => {
     bucketName,
   });
 
-  const result = await DynamoS3DocumentClient.get({
+  const result = await dynamoS3DocumentClient.get({
     Key: {
       Path: path,
     },
