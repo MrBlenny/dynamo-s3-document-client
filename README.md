@@ -5,9 +5,9 @@ This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves ove
 ### Example
 
 To create a client with the following functionality.
-* Item <= 400kB *Save to DynamoDB*
-* Item > 400KB and <= maxDocumentSize *Save to S3*
-* Item > maxDocumentSize *Reject, don't save*
+* Item <= 400kB - **Save to DynamoDB**
+* Item > 400KB and <= maxDocumentSize - **Save to S3**
+* Item > maxDocumentSize  - **Reject, don't save**
 
 ```ts
 import { DynamoS3DocumentClient } from 'dynamo-s3-document-client';
