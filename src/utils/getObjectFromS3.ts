@@ -1,7 +1,7 @@
 import { s3BodyBufferToJson } from './s3BodyBufferToJson';
-import { IDynamoS3DocumentClientConfig } from '../DynamoS3DocumentClient';
+import { IDynamoS3DocumentClientConfigDefaulted } from '../DynamoS3DocumentClient';
 
-export function getObjectFromS3(s3Key: string, config: IDynamoS3DocumentClientConfig) {
+export function getObjectFromS3(s3Key: string, config: IDynamoS3DocumentClientConfigDefaulted) {
   return config.clients.s3.getObject({
     Bucket: config.bucketName,
     Key: s3Key,

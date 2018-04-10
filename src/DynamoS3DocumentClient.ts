@@ -15,6 +15,18 @@ export interface IDynamoS3DocumentClientConfig {
   maxDocumentSize?: number;
 };
 
+export interface IDynamoS3DocumentClientConfigDefaulted {
+  clients: {
+    dynamo: AWS.DynamoDB.DocumentClient,
+    s3: AWS.S3,
+  },
+  bucketName: string;
+  contentPath: string;
+  s3KeyPath: string;
+  pathPath: string;
+  maxDocumentSize: number;
+};
+
 const transformParams = (params: any, shouldUseS3: boolean, config: IDynamoS3DocumentClientConfig) => {
   const paramsTransformed = cloneDeep(params);
 
@@ -38,7 +50,7 @@ const transformParams = (params: any, shouldUseS3: boolean, config: IDynamoS3Doc
  * - This happens behind the scenes, all you need to do is pass the S3 and Dynamo Clients along with a bucketName
  */
 export class DynamoS3DocumentClient {
-  config: IDynamoS3DocumentClientConfig;
+  config: IDynamoS3DocumentClientConfigDefaulted;
   constructor(config: IDynamoS3DocumentClientConfig) {
     // Set config and defaults
     this.config = config;
@@ -48,16 +60,13 @@ export class DynamoS3DocumentClient {
     this.config.maxDocumentSize = config.maxDocumentSize || 5 * 1024 * 1024;
   }
   // Method Summary
-  batchGet(...args) {
-    return this.config.clients.dynamo.batchGet(...args);
-  }
-  batchWrite(...args) {
-    return this.config.clients.dynamo.batchWrite(...args);
-  }
-  createSet(...args) {
-    return this.config.clients.dynamo.createSet(...args);
-  }
-  delete(params) {
+  batchGet = this.config.clients.dynamo.batchGet;
+  batchWrite = this.config.clients.dynamo.batchWrite;
+  createSet = this.config.clients.dynamo.createSet;
+  query = this.config.clients.dynamo.query;
+  scan = this.config.clients.dynamo.scan;
+  update = this.config.clients.dynamo.update;
+  delete = (params: AWS.DynamoDB.DocumentClient.DeleteItemInput) => {
     const func = this.config.clients.dynamo.delete(params).promise()
       .then(async (raw) => {
         const dynamoData = raw.Attributes;
@@ -88,7 +97,7 @@ export class DynamoS3DocumentClient {
     func.promise = () => func;
     return func;
   }
-  get(params) {
+  get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
     const func = this.config.clients.dynamo.get(params).promise()
       .then(async (raw) => {
         const dynamoData = raw.Item;
@@ -111,7 +120,7 @@ export class DynamoS3DocumentClient {
     func.promise = () => func;
     return func;
   }
-  put(params) {
+  put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
     const shouldUseS3 = checkShouldUseS3(params.Item, this.config);
     const paramsTransformed = transformParams(params, shouldUseS3, this.config);
     const func = this.config.clients.dynamo.put(paramsTransformed).promise()
@@ -147,14 +156,5 @@ export class DynamoS3DocumentClient {
 
     func.promise = () => func;
     return func;
-  }
-  query(...args) {
-    return this.config.clients.dynamo.query(...args);
-  }
-  scan(...args) {
-    return this.config.clients.dynamo.scan(...args);
-  }
-  update(...args) {
-    return this.config.clients.dynamo.update(...args);
   }
 }
