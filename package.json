@@ -10,7 +10,9 @@
   "license": "ISC",
   "description": "Just like AWS DynamoDB DocumentClient but saves oversize files in S3.",
   "dependencies": {
-    "aws-sdk": "^2.205.0"
+    "@types/lodash": "^4.14.106",
+    "aws-sdk": "^2.205.0",
+    "lodash": "^4.17.5"
   },
   "repository": {
     "type": "git",
