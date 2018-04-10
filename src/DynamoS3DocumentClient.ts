@@ -4,14 +4,21 @@ import { checkShouldUseS3 } from './utils/checkShouldUseS3';
 import { getObjectFromS3 } from './utils/getObjectFromS3';
 
 export interface IDynamoS3DocumentClientConfig {
-  clients: {
-    dynamo: AWS.DynamoDB.DocumentClient,
-    s3: AWS.S3,
+  clients?: {
+    /** A configured DynamoDB.DocumentClient */
+    dynamo?: AWS.DynamoDB.DocumentClient,
+    /** A configured S3 Client */
+    s3?: AWS.S3,
   },
+  /** The name of the bucket to save things to */
   bucketName: string;
-  contentPath?: string; // Path to the content on the 'params.Item'
-  s3KeyPath?: string; // Path to the S3Key on the 'params.Item'
-  pathPath?: string; // Path to the Path on the 'params.Item' or 'params.Key'
+  /** Path to the content on the 'params.Item' */
+  contentPath?: string;
+  /** Path to the S3Key on the 'params.Item' */
+  s3KeyPath?: string;
+  /** Path to the Path on the 'params.Item' or 'params.Key' */
+  pathPath?: string;
+  /** Maximum Document size to save to S3 */
   maxDocumentSize?: number;
 };
 
@@ -55,6 +62,14 @@ export class DynamoS3DocumentClient {
     // Set config and defaults
     this.config = {
       ...config,
+      clients: {
+        dynamo: config.clients && config.clients.dynamo 
+          ? config.clients.dynamo 
+          : new AWS.DynamoDB.DocumentClient(),
+        s3:config.clients && config.clients.s3 
+          ? config.clients.s3 
+          : new AWS.S3(),
+      },
       contentPath: config.contentPath || 'Content',
       s3KeyPath: config.s3KeyPath || 'Attributes.S3Key',
       pathPath: config.pathPath || 'Path',
@@ -70,8 +85,8 @@ export class DynamoS3DocumentClient {
   update = this.config.clients.dynamo.update;
   delete = (params: AWS.DynamoDB.DocumentClient.DeleteItemInput) => {
     const func = this.config.clients.dynamo.delete(params).promise()
-      .then(async (raw) => {
-        const dynamoData = raw.Attributes;
+      .then(async (response) => {
+        const dynamoData = response.Attributes || {};
         // Get the S3 key
         const s3Key = get(dynamoData, this.config.s3KeyPath);
 
@@ -93,7 +108,7 @@ export class DynamoS3DocumentClient {
         }
 
         // Return the possibly mutated dynamo data
-        return raw;
+        return response;
       });
 
     func.promise = () => func;
@@ -101,8 +116,8 @@ export class DynamoS3DocumentClient {
   }
   get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
     const func = this.config.clients.dynamo.get(params).promise()
-      .then(async (raw) => {
-        const dynamoData = raw.Item;
+      .then(async (response) => {
+        const dynamoData = response.Item || {};
         // Get the S3 key
         const s3Key = get(dynamoData, this.config.s3KeyPath);
 
@@ -115,7 +130,7 @@ export class DynamoS3DocumentClient {
           set(dynamoData, this.config.contentPath, s3Content);
         }
 
-        return raw;
+        return response;
       });
 
 
@@ -126,36 +141,36 @@ export class DynamoS3DocumentClient {
     const shouldUseS3 = checkShouldUseS3(params.Item, this.config);
     const paramsTransformed = transformParams(params, shouldUseS3, this.config);
     const func = this.config.clients.dynamo.put(paramsTransformed).promise()
-    .then(async (raw) => {
-      const dynamoData = raw.Item;
-      const content = get(params, ['Item', this.config.contentPath]);
-      const path = get(dynamoData, this.config.pathPath);
+      .then(async (response) => {
+        const dynamoData = response.Attributes || {};
+        const content = get(params, ['Attributes', this.config.contentPath]);
+        const path = get(dynamoData, this.config.pathPath);
 
-      const undoSendToDynamo = () => this.delete({
-        TableName: params.TableName,
-        Key: {
-          Path: path,
-        },
+        const undoSendToDynamo = () => this.delete({
+          TableName: params.TableName,
+          Key: {
+            Path: path,
+          },
+        });
+
+        // Send to S3 if required
+        if (shouldUseS3) {
+          await this.config.clients.s3.putObject({
+            Bucket: this.config.bucketName,
+            Key: path,
+            Body: JSON.stringify(content),
+          }).promise().catch(e => undoSendToDynamo().then(() => {
+          // If the S3 fails to save, we must undo the sendToDynamo
+          // If this undo fails, the S3-Dyanamo store will be out of sync!
+            throw new Error(e); // Throw the original S3 error
+          }));
+        }
+
+        // Resolve the initial callback with the modified dynamoData
+        set(dynamoData, this.config.contentPath, content);
+
+        return response;
       });
-
-      // Send to S3 if required
-      if (shouldUseS3) {
-        await this.config.clients.s3.putObject({
-          Bucket: this.config.bucketName,
-          Key: path,
-          Body: JSON.stringify(content),
-        }).promise().catch(e => undoSendToDynamo().then(() => {
-        // If the S3 fails to save, we must undo the sendToDynamo
-        // If this undo fails, the S3-Dyanamo store will be out of sync!
-          throw new Error(e); // Throw the original S3 error
-        }));
-      }
-
-      // Resolve the initial callback with the modified dynamoData
-      set(dynamoData, this.config.contentPath, content);
-
-      return raw;
-    });
 
     func.promise = () => func;
     return func;

@@ -1,4 +1,3 @@
-import * as AWS from 'aws-sdk';
 import * as awsMock from 'aws-sdk-mock';
 import { DynamoS3DocumentClient } from '../DynamoS3DocumentClient';
 
@@ -18,13 +17,7 @@ it('gets a document (dynamo)', async () => {
     });
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const DynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await DynamoS3DocumentClient.get({
     Key: {

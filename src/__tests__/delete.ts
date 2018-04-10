@@ -1,4 +1,3 @@
-import * as AWS from 'aws-sdk';
 import * as awsMock from 'aws-sdk-mock';
 import { DynamoS3DocumentClient } from '../DynamoS3DocumentClient';
 import * as cryto from 'crypto';
@@ -24,15 +23,10 @@ it('deletes a document (small - dynamo)', async () => {
     });
   });
 
-  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.delete({
+    TableName: 'test-table',
     Key: {
       Path: path,
     },
@@ -77,15 +71,11 @@ it('deletes a document (large - S3)', async () => {
     return callback(null, {});
   });
 
-  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
+
 
   const result = await dynamoS3DocumentClient.delete({
+    TableName: 'test-table',
     Key: {
       Path: path,
     },

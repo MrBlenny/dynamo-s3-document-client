@@ -1,4 +1,3 @@
-import * as AWS from 'aws-sdk';
 import * as awsMock from 'aws-sdk-mock';
 import * as cryto from 'crypto';
 import { DynamoS3DocumentClient } from '../DynamoS3DocumentClient';
@@ -26,18 +25,10 @@ it('puts a document (small - dynamo)', async () => {
     });
   });
 
-  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.put({
-    Key: {
-      Path: path,
-    },
+    TableName: 'table',
     Item: {
       Path: path,
       Content: contentSmall,
@@ -77,18 +68,10 @@ it('puts a document (large - S3)', async () => {
     });
   });
 
-  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.put({
-    Key: {
-      Path: path,
-    },
+    TableName: 'table',
     Item: {
       Path: path,
       Content: contentLarge,
