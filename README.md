@@ -14,10 +14,11 @@ import { DynamoS3DocumentClient } from 'dynamo-s3-document-client';
 import * as AWS from 'aws-sdk';
 import * as crypto from 'cryto';
 
+// Create a client that can save files up to 10MB.
 const dynamoS3DocumentClient = new DynamoS3DocumentClient({
   clients: {
     dynamo: new AWS.DynamoDB.DocumentClient(),
-    s3: new AWS.S3,
+    s3: new AWS.S3(),
   },
   bucketName: 'the-name-of-an-s3-bucket',
   maxDocumentSize: 10 * 1024 * 1024, // 10MB max
