@@ -1,74 +1,66 @@
-# S3 Static Uploader
+# Dynamo S3 Document Client
 
-This provides a few utils that make manipulating your s3 bucket easy. It is designed to upload an entire directory and configure it for static hosting. Each util function takes in an `s3` object which you'll need to create and configure yourself using the aws-sdk. Usually this is done something like `const s3 = new AWS.S3({ signatureVersion: 'v4' });`.
-
-Install with:
-`npm i s3-static-uploader`
-
-The following utils are made available. Their interfaces are typed with typescript so you should get i/o annotations.
-
-* `clearBucket(s3, bucketName)`
-* `createBucket(s3, bucketName)`
-* `listBucketObjects(s3, bucketName)`
-* `staticWebsiteSetup(s3, bucketName)`
-* `updateBucketPolicy(s3, bucketName, policy)`
-* `uploadDirectory(s3, bucketName, directoryPath, ?pathTransform)`
-* `uploadObject(s3, bucketName, path, directoryPath, ?pathTransform)`
-* `deleteObject(s3, bucketName, key)`
-
+This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves oversize files to AWS. DynamoDB will saves files up to 400B, any files larger than this will be saved in S3.
 
 ### Example
 
-If you want to upload your directory and configure it for public static hosting:
+To create a client with the following functionality.
+* Item <= 400kB *Save to DynamoDB*
+* Item > 400KB and <= maxDocumentSize *Save to S3*
+* Item > maxDocumentSize *Reject, don't save*
 
-```js
-// tslint:disable:no-console
+```ts
+import { DynamoS3DocumentClient } from 'dynamo-s3-document-client';
 import * as AWS from 'aws-sdk';
-import { join } from 'path';
-import { 
-  clearBucket,
-  staticWebsiteSetup,
-  updateBucketPolicy,
-  uploadDirectory,
-} from 's3-static-uploader';
+import * as crypto from 'cryto';
 
-// Set the bucket name
-const bucketName = 'YOUR_BUCKET_NAME_GOES_HERE';
+const dynamoS3DocumentClient = new DynamoS3DocumentClient({
+  clients: {
+    dynamo: new AWS.DynamoDB.DocumentClient(),
+    s3: new AWS.S3,
+  },
+  bucketName: 'the-name-of-an-s3-bucket',
+  maxDocumentSize: 10 * 1024 * 1024, // 10MB max
+})
 
-// Create the bucket policy
-const policy = {
-  Version: '2008-10-17',
-  Statement: [
-    {
-      Sid: 'PublicReadForGetBucketObjects',
-      Effect: 'Allow',
-      Principal: {
-        AWS: '*',
-      },
-      Action: 's3:GetObject',
-      Resource: `arn:aws:s3:::${bucketName}/*`,
-    },
-  ],
-};
+// Use this just like you would AWS.DynamoDB.DocumentClient
 
-// Initialise the s3 lib
-AWS.config.update(CONFIGURE_YOUR_AWS_LIB_WITH_YOUR_CREDS);
-const s3 = new AWS.S3({ signatureVersion: 'v4' });
+// Save the a small file (this will save to DynamoDB)
+await dynamoS3DocumentClient.put({
+  Item: {
+    Path: 'path/of/the/file',
+    Attributes: {},
+    Content: {
+      here: 'is where your content goes',
+    }
+  }
+}).promise()
+  .then(console.log);
 
-// Start publishing
-void (async () => {
-  console.log(`☁️  Deploying to AWS Bucket: ${bucketName}`);
-  console.log(`🗃️  Creating bucket...`);
-  await createBucket(s3, bucketName);
-  console.log(`📜  Setting bucket policy.`);
-  await updateBucketPolicy(s3, bucketName, policy);
-  console.log(`📜  Setting bucket as static website.`);
-  await staticWebsiteSetup(s3, bucketName);
-  console.log(`✨  Cleaning out bucket contents.`);
-  await clearBucket(s3, bucketName);
-  console.log(`💾  Uploading files.`);
-  // Put the path to the directory you want to upload below
-  const uploads = await uploadDirectory(s3, bucketName, join(__dirname, '../../build');
-  console.log(`🏁  Upload Complete. ${uploads.length} files uploaded.`);
-})();
+// Read the small file
+await dynamoS3DocumentClient.get({
+  Key: {
+    Path: 'path/of/the/file',
+  }
+}).promise()
+  .then(console.log);
+
+// Save a large file (this will save the Content to S3 and the Path, Attributes to Dynamo)
+await dynamoS3DocumentClient.put({
+  Item: {
+    Path: 'path/of/the/file',
+    Attributes: {},
+    Content: crypto.randomBytes(1 * 1024 * 1024)
+  }
+}).promise()
+  .then(console.log);
+
+// Read the large file
+await dynamoS3DocumentClient.get({
+  Key: {
+    Path: 'path/of/the/file',
+  }
+}).promise()
+  .then(console.log);
+
 ```

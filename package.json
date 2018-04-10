@@ -8,7 +8,7 @@
   },
   "author": "David Revay",
   "license": "ISC",
-  "description": "A few utils that make manipulating your s3 bucket easy.",
+  "description": "Just like AWS DynamoDB DocumentClient but saves oversize files in S3.",
   "dependencies": {
     "aws-sdk": "^2.205.0"
   },
