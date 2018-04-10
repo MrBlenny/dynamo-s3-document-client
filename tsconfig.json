@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./build",
+    "declaration": true,
+    "noUnusedLocals": true,
+    "strict": true,
+    "pretty": true,
+    "noEmitOnError": true,
+    "lib": [
+      "es2016",
+      "dom"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "build/**/*"
+  ],
+  "include": [ "src", "typings.d.ts" ]
+}

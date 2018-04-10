@@ -1,0 +1,23 @@
+{
+  "name": "dynamo-s3-document-client",
+  "version": "1.0.0",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "rm -rf build && mkdir build && yarn tsc",
+    "lint": "tslint --project tsconfig.lint.json"
+  },
+  "author": "David Revay",
+  "license": "ISC",
+  "description": "A few utils that make manipulating your s3 bucket easy.",
+  "dependencies": {
+    "aws-sdk": "^2.205.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MrBlenny/dynamo-s3-document-client"
+  },
+  "devDependencies": {
+    "tslint": "^5.9.1",
+    "typescript": "2.6"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "strict": true
+  },
+  "exclude": [
+    "node_modules",
+    "build/**/*"
+  ],
+  "include": [ "**/*.ts", "typings.d.ts" ]
+}
