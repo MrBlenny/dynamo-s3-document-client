@@ -114,28 +114,46 @@ export class DynamoS3DocumentClient {
     func.promise = () => func;
     return func;
   }
-  get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
-    const func = this.config.clients.dynamo.get(params).promise()
-      .then(async (response) => {
-        const dynamoData = response.Item || {};
-        // Get the S3 key
-        const s3Key = get(dynamoData, this.config.s3KeyPath);
+  get(params: AWS.DynamoDB.DocumentClient.GetItemInput, callback: any) {
+    // const func = this.config.clients.dynamo.get(params).promise()
+    //   .then(async (response) => {
+    //     const dynamoData = response.Item || {};
+    //     // Get the S3 key
+    //     const s3Key = get(dynamoData, this.config.s3KeyPath);
 
-        // If the dynamo result has an S3 key, fetch data from S3
-        const s3Data = s3Key && await getObjectFromS3(s3Key, this.config);
+    //     // If the dynamo result has an S3 key, fetch data from S3
+    //     const s3Data = s3Key && await getObjectFromS3(s3Key, this.config);
 
-        // If there is a Body on the S3 data, mutate the dynamo file content
-        const s3Content = get(s3Data, 'Body');
-        if (s3Content) {
-          set(dynamoData, this.config.contentPath, s3Content);
-        }
+    //     // If there is a Body on the S3 data, mutate the dynamo file content
+    //     const s3Content = get(s3Data, 'Body');
+    //     if (s3Content) {
+    //       set(dynamoData, this.config.contentPath, s3Content);
+    //     }
 
-        return response;
-      });
+    //     return response;
+    //   });
 
 
-    func.promise = () => func;
-    return func;
+    // func.promise = () => func;
+    // return func;
+
+
+    return this.config.clients.dynamo.get(params, async (error, response) => {
+      const dynamoData = response.Item || {};
+      // Get the S3 key
+      const s3Key = get(dynamoData, this.config.s3KeyPath);
+
+      // If the dynamo result has an S3 key, fetch data from S3
+      const s3Data = s3Key && await getObjectFromS3(s3Key, this.config);
+
+      // If there is a Body on the S3 data, mutate the dynamo file content
+      const s3Content = get(s3Data, 'Body');
+      if (s3Content) {
+        set(dynamoData, this.config.contentPath, s3Content);
+      }
+
+      return callback(error, response);
+    });
   }
   put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
     const shouldUseS3 = checkShouldUseS3(params.Item, this.config);
