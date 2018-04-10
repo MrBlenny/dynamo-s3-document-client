@@ -1,6 +1,8 @@
 # Dynamo S3 Document Client
 
-This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves oversize files to AWS. DynamoDB will saves files up to 400B, any files larger than this will be saved in S3.
+This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves oversize files to AWS. 
+
+DynamoDB will saves files up to 400kB, any files larger than this will be saved in S3.
 
 ### Example
 
