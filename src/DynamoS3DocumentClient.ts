@@ -27,7 +27,7 @@ export interface IDynamoS3DocumentClientConfigDefaulted {
   maxDocumentSize: number;
 };
 
-const transformParams = (params: any, shouldUseS3: boolean, config: IDynamoS3DocumentClientConfig) => {
+const transformParams = (params: any, shouldUseS3: boolean, config: IDynamoS3DocumentClientConfigDefaulted) => {
   const paramsTransformed = cloneDeep(params);
 
   // If we should use s3, the s3Key and content must be transformed
