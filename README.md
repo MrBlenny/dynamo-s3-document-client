@@ -30,6 +30,7 @@ const dynamoS3DocumentClient = new DynamoS3DocumentClient({
 
 // Save the a small file (this will save to DynamoDB)
 await dynamoS3DocumentClient.put({
+  TableName: 'test-table',
   Item: {
     Path: 'path/of/the/file',
     Attributes: {},
@@ -42,6 +43,7 @@ await dynamoS3DocumentClient.put({
 
 // Read the small file
 await dynamoS3DocumentClient.get({
+  TableName: 'test-table',
   Key: {
     Path: 'path/of/the/file',
   }
@@ -50,6 +52,7 @@ await dynamoS3DocumentClient.get({
 
 // Save a large file (this will save the Content to S3 and the Path, Attributes to Dynamo)
 await dynamoS3DocumentClient.put({
+  TableName: 'test-table',
   Item: {
     Path: 'path/of/the/file',
     Attributes: {},
@@ -60,6 +63,7 @@ await dynamoS3DocumentClient.put({
 
 // Read the large file
 await dynamoS3DocumentClient.get({
+  TableName: 'test-table',
   Key: {
     Path: 'path/of/the/file',
   }
