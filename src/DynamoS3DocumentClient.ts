@@ -43,25 +43,26 @@ export interface IDynamoS3DocumentClientConfigDefaulted {
  * - This happens behind the scenes, all you need to do is pass the S3 and Dynamo Clients along with a bucketName
  */
 export class DynamoS3DocumentClient {
-  config: IDynamoS3DocumentClientConfigDefaulted;
   constructor(config: IDynamoS3DocumentClientConfig) {
+    
     // Set config and defaults
     this.config = {
       ...config,
       clients: {
         dynamo: config.clients && config.clients.dynamo 
-          ? config.clients.dynamo 
-          : new AWS.DynamoDB.DocumentClient(),
+        ? config.clients.dynamo 
+        : new AWS.DynamoDB.DocumentClient(),
         s3:config.clients && config.clients.s3 
-          ? config.clients.s3 
-          : new AWS.S3(),
+        ? config.clients.s3 
+        : new AWS.S3(),
       },
       contentPath: config.contentPath || 'Content',
       s3KeyPath: config.s3KeyPath || 'Attributes.S3Key',
       pathPath: config.pathPath || 'Path',
       maxDocumentSize: config.maxDocumentSize || 5 * 1024 * 1024,
     };
-    // Method Summary
+
+    // Default dynamo methods
     this.batchGet = this.config.clients.dynamo.batchGet;
     this.batchWrite = this.config.clients.dynamo.batchWrite;
     this.createSet = this.config.clients.dynamo.createSet;
@@ -69,6 +70,17 @@ export class DynamoS3DocumentClient {
     this.scan = this.config.clients.dynamo.scan;
     this.update = this.config.clients.dynamo.update;
   }
+
+  // Default Dynamo method types
+  config: IDynamoS3DocumentClientConfigDefaulted;
+  batchGet: AWS.DynamoDB.DocumentClient['batchGet'];
+  batchWrite: AWS.DynamoDB.DocumentClient['batchWrite'];
+  createSet: AWS.DynamoDB.DocumentClient['createSet'];
+  query: AWS.DynamoDB.DocumentClient['query'];
+  scan: AWS.DynamoDB.DocumentClient['scan'];
+  update: AWS.DynamoDB.DocumentClient['update'];
+
+  // Modified Methods
   delete = (params: AWS.DynamoDB.DocumentClient.DeleteItemInput) => {
     const dynamoDelete = this.config.clients.dynamo.delete(params);
     const dynamoDeletePromise = dynamoDelete.promise
