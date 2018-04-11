@@ -1,11 +1,7 @@
-export interface IS3BodyBufferToJson {
-  Body: any
-}
-
-export function s3BodyBufferToJson(data: IS3BodyBufferToJson) {
-  let Body = data.Body;
+export function s3BodyBufferToJson(data: any) {
+  let Body;
   try {
-    Body = JSON.parse(Body);
+    Body = JSON.parse(data.Body);
   } catch (e) { }
   return {
     ...data,

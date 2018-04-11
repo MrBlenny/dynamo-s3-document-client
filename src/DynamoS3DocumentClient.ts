@@ -81,7 +81,7 @@ export class DynamoS3DocumentClient {
   update: AWS.DynamoDB.DocumentClient['update'];
 
   // Modified Methods
-  delete = (params: AWS.DynamoDB.DocumentClient.DeleteItemInput) => {
+  delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError> {
     const dynamoDelete = this.config.clients.dynamo.delete(params);
     const dynamoDeletePromise = dynamoDelete.promise
     dynamoDelete.promise = () => dynamoDeletePromise().then(async (response) => {
@@ -111,8 +111,9 @@ export class DynamoS3DocumentClient {
     })
 
     return dynamoDelete
-  }
-  get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
+  };
+
+  get(params: AWS.DynamoDB.DocumentClient.GetItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.GetItemOutput, AWS.AWSError> {
     const dynamoGet = this.config.clients.dynamo.get(params);
     const dynamoGetPromise = dynamoGet.promise;
     dynamoGet.promise = () => dynamoGetPromise().then(async (response) => {
@@ -133,8 +134,9 @@ export class DynamoS3DocumentClient {
     })
 
     return dynamoGet
-  }
-  put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
+  };
+  
+  put(params: AWS.DynamoDB.DocumentClient.PutItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.PutItemOutput, AWS.AWSError> {
     const shouldUseS3 = checkShouldUseS3(params.Item, this.config);
     const transformParams = () => {
       const paramsTransformed = cloneDeep(params);

@@ -8,6 +8,7 @@
   "scripts": {
     "test": "jest src",
     "build": "rm -rf build && mkdir build && yarn tsc",
+    "build:link": "yarn build && cd build && yarn link",
     "lint": "tslint --project tsconfig.lint.json"
   },
   "repository": {
@@ -15,8 +16,10 @@
     "url": "https://github.com/MrBlenny/dynamo-s3-document-client"
   },
   "dependencies": {
-    "aws-sdk": "^2.205.0",
     "lodash": "^4.17.5"
+  },
+  "peerDependencies": {
+    "aws-sdk": "^2.205.0"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
@@ -26,6 +29,7 @@
     "jest": "^22.4.3",
     "ts-jest": "^22.4.2",
     "tslint": "^5.9.1",
+    "aws-sdk": "^2.205.0",
     "typescript": "2.6"
   }
 }
