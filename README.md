@@ -4,6 +4,9 @@ This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves ove
 
 DynamoDB will saves files up to 400kB, any files larger than this will be saved in S3.
 
+## Install
+`npm i dynamo-s3-document-client` or `yarn add dynamo-s3-document-client`
+
 ### Example
 
 To create a client with the following functionality.
@@ -18,17 +21,13 @@ import * as crypto from 'cryto';
 
 // Create a client that can save files up to 10MB.
 const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-  clients: {
-    dynamo: new AWS.DynamoDB.DocumentClient(),
-    s3: new AWS.S3(),
-  },
   bucketName: 'the-name-of-an-s3-bucket',
   maxDocumentSize: 10 * 1024 * 1024, // 10MB max
 })
 
 // Use this just like you would AWS.DynamoDB.DocumentClient
 
-// Save the a small file (this will save to DynamoDB)
+// Save a small file (this will save to DynamoDB)
 await dynamoS3DocumentClient.put({
   TableName: 'test-table',
   Item: {
