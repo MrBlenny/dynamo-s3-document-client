@@ -7,6 +7,19 @@ DynamoDB will saves files up to 400kB, any files larger than this will be saved 
 ## Install
 `npm i dynamo-s3-document-client` or `yarn add dynamo-s3-document-client`
 
+## Status
+
+Completed methods:
+
+- [x] delete
+- [x] get
+- [x] put
+- [x] config (no changed needed)
+- [ ] batchGet
+- [ ] batchWrite
+- [x] createSet (no changed needed)
+- [x] query (no changed needed)
+- [ ] update
 ### Example
 
 To create a client with the following functionality.
