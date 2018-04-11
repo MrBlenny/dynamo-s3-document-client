@@ -50,11 +50,11 @@ export class DynamoS3DocumentClient {
       ...config,
       clients: {
         dynamo: config.clients && config.clients.dynamo 
-        ? config.clients.dynamo 
-        : new AWS.DynamoDB.DocumentClient(),
-        s3:config.clients && config.clients.s3 
-        ? config.clients.s3 
-        : new AWS.S3(),
+          ? config.clients.dynamo 
+          : new AWS.DynamoDB.DocumentClient(),
+        s3: config.clients && config.clients.s3 
+          ? config.clients.s3 
+          : new AWS.S3(),
       },
       contentPath: config.contentPath || 'Content',
       s3KeyPath: config.s3KeyPath || 'Attributes.S3Key',
@@ -83,55 +83,61 @@ export class DynamoS3DocumentClient {
   // Modified Methods
   delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError> {
     const dynamoDelete = this.config.clients.dynamo.delete(params);
-    const dynamoDeletePromise = dynamoDelete.promise
-    dynamoDelete.promise = () => dynamoDeletePromise().then(async (response) => {
-      const dynamoData = response.Attributes || {};
-      // Get the S3 key
-      const s3Key = get(dynamoData, this.config.s3KeyPath);
+    const oldPromise = dynamoDelete.promise;
+    const config = this.config;
+    dynamoDelete.promise = function() {
+      return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.DeleteItemOutput) => {
+        const dynamoData = response.Attributes || {};
+        // Get the S3 key
+        const s3Key = get(dynamoData, config.s3KeyPath);
 
-      // If the dynamo result has an S3 key, fetch data from S3
-      const s3Data = s3Key && await getObjectFromS3(s3Key, this.config);
+        // If the dynamo result has an S3 key, fetch data from S3
+        const s3Data = s3Key && await getObjectFromS3(s3Key, config);
 
-      // If there is a Body on the S3 data, mutate the dynamo file content
-      const s3Content = get(s3Data, 'Body');
-      if (s3Content) {
-        set(dynamoData, this.config.contentPath, s3Content);
-      }
+        // If there is a Body on the S3 data, mutate the dynamo file content
+        const s3Content = get(s3Data, 'Body');
+        if (s3Content) {
+          set(dynamoData, config.contentPath, s3Content);
+        }
 
-      // Delete the item from S3
-      if (s3Key) {
-        await this.config.clients.s3.deleteObject({
-          Bucket: this.config.bucketName,
-          Key: s3Key,
-        }).promise();
-      }
+        // Delete the item from S3
+        if (s3Key) {
+          await config.clients.s3.deleteObject({
+            Bucket: config.bucketName,
+            Key: s3Key,
+          }).promise();
+        }
 
-      // Return the possibly mutated dynamo data
-      return response;
-    })
+        // Return the possibly mutated dynamo data
+        return response;
+      })
+    }
 
     return dynamoDelete
   };
 
   get(params: AWS.DynamoDB.DocumentClient.GetItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.GetItemOutput, AWS.AWSError> {
     const dynamoGet = this.config.clients.dynamo.get(params);
-    const dynamoGetPromise = dynamoGet.promise;
-    dynamoGet.promise = () => dynamoGetPromise().then(async (response) => {
-      const dynamoData = response.Item || {};
-      // Get the S3 key
-      const s3Key = get(dynamoData, this.config.s3KeyPath);
-
-      // If the dynamo result has an S3 key, fetch data from S3
-      const s3Data = s3Key && await getObjectFromS3(s3Key, this.config);
-
-      // If there is a Body on the S3 data, mutate the dynamo file content
-      const s3Content = get(s3Data, 'Body');
-      if (s3Content) {
-        set(dynamoData, this.config.contentPath, s3Content);
-      }
-
-      return response
-    })
+    const oldPromise = dynamoGet.promise;
+    const config = this.config;
+    dynamoGet.promise = function() {
+      return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
+        const dynamoData = response.Item || {};
+        // Get the S3 key
+        const s3Key = get(dynamoData, config.s3KeyPath);
+  
+        // If the dynamo result has an S3 key, fetch data from S3
+        const s3Data = s3Key && await getObjectFromS3(s3Key, config);
+  
+        // If there is a Body on the S3 data, mutate the dynamo file content
+        const s3Content = get(s3Data, 'Body');
+        if (s3Content) {
+          set(dynamoData, config.contentPath, s3Content);
+        }
+  
+        return response
+      })
+    }
 
     return dynamoGet
   };
@@ -151,37 +157,40 @@ export class DynamoS3DocumentClient {
     };
     const paramsTransformed = transformParams();
     const dynamoPut = this.config.clients.dynamo.put(paramsTransformed);
-    const dynamoPutPromise = dynamoPut.promise;
-    dynamoPut.promise = () => dynamoPutPromise().then(async (response) => {
-      const dynamoData = response.Attributes || {};
-      const content = get(params.Item, this.config.contentPath);
-      const path = get(dynamoData, this.config.pathPath);
-
-      const undoSendToDynamo = () => this.delete({
-        TableName: params.TableName,
-        Key: {
-          Path: path,
-        },
-      }).promise();
-
-      // Send to S3 if required
-      if (shouldUseS3) {
-        await this.config.clients.s3.putObject({
-          Bucket: this.config.bucketName,
-          Key: path,
-          Body: JSON.stringify(content),
-        }).promise().catch(e => undoSendToDynamo().then(() => {
-        // If the S3 fails to save, we must undo the sendToDynamo
-        // If this undo fails, the S3-Dyanamo store will be out of sync!
-          throw new Error(e); // Throw the original S3 error
-        }));
-      }
-
-      // Resolve the initial callback with the modified dynamoData
-      set(dynamoData, this.config.contentPath, content);
-
-      return response;
-    })
+    const self = this;
+    const oldPromise = dynamoPut.promise;
+    dynamoPut.promise = function() {
+      return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.PutItemOutput) => {
+        const dynamoData = response.Attributes || {};
+        const content = get(params.Item, self.config.contentPath);
+        const path = get(dynamoData, self.config.pathPath);
+  
+        const undoSendToDynamo = () => self.delete({
+          TableName: params.TableName,
+          Key: {
+            Path: path,
+          },
+        }).promise();
+  
+        // Send to S3 if required
+        if (shouldUseS3) {
+          await self.config.clients.s3.putObject({
+            Bucket: self.config.bucketName,
+            Key: path,
+            Body: JSON.stringify(content),
+          }).promise().catch(e => undoSendToDynamo().then(() => {
+          // If the S3 fails to save, we must undo the sendToDynamo
+          // If this undo fails, the S3-Dyanamo store will be out of sync!
+            throw new Error(e); // Throw the original S3 error
+          }));
+        }
+  
+        // Resolve the initial callback with the modified dynamoData
+        set(dynamoData, self.config.contentPath, content);
+  
+        return response;
+      })
+    }
 
     return dynamoPut
   }
