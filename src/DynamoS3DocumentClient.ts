@@ -96,6 +96,7 @@ export class DynamoS3DocumentClient {
 
         // If there is a Body on the S3 data, mutate the dynamo file content
         const s3Content = get(s3Data, 'Body');
+
         if (s3Content) {
           set(dynamoData, config.contentPath, s3Content);
         }

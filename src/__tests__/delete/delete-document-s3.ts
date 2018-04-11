@@ -1,20 +1,22 @@
 import * as awsMock from 'aws-sdk-mock';
 import { DynamoS3DocumentClient } from '../../DynamoS3DocumentClient';
 import * as cryto from 'crypto';
+import * as AWS from 'aws-sdk';
 
 const bucketName = 'some-s3-bucket-name';
 const path = 'path/to/document';
-const contentLarge = cryto.randomBytes(400 * 1024);
+const contentLarge = {
+  somedata: cryto.randomBytes(400 * 1024)
+};
 
 it('deletes a document (large - S3)', async () => {
   awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
     return callback(null, {});
   });
 
-  awsMock.mock('DynamoDB.DocumentClient', 'delete', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'delete', (params: AWS.DynamoDB.DocumentClient.DeleteItemInput, callback) => {
     expect(params.Key).toHaveProperty('Path', path);
-
-    return callback(null, {
+    const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
       Attributes: {
         Path: params.Key.Path,
         Attributes: {
@@ -22,17 +24,18 @@ it('deletes a document (large - S3)', async () => {
         },
         Content: undefined,
       },
-    });
+    }
+    return callback(null, data);
   });
 
-  awsMock.mock('S3', 'getObject', (params, callback) => {
+  awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
     expect(params).toHaveProperty('Key', path);
     expect(params).toHaveProperty('Bucket', bucketName);
-    return callback(null, {
-      Body: contentLarge,
-    });
+    const data: AWS.S3.GetObjectOutput = {
+      Body: Buffer.from(JSON.stringify(contentLarge), 'utf8'),
+    };
+    return callback(null, data);
   });
-
 
   awsMock.mock('S3', 'deleteObject', (params, callback) => {
     expect(params).toHaveProperty('Key', path);
