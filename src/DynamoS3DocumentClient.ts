@@ -162,7 +162,7 @@ export class DynamoS3DocumentClient {
     const oldPromise = dynamoPut.promise;
     dynamoPut.promise = function() {
       return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.PutItemOutput) => {
-        const dynamoData = response.Attributes || {};
+        const dynamoData = paramsTransformed.Item || {};
         const content = get(params.Item, self.config.contentPath);
         const path = get(dynamoData, self.config.pathPath);
   
@@ -171,7 +171,7 @@ export class DynamoS3DocumentClient {
           Key: {
             Path: path,
           },
-        }).promise();
+        }).promise().catch();
   
         // Send to S3 if required
         if (shouldUseS3) {
@@ -189,7 +189,10 @@ export class DynamoS3DocumentClient {
         // Resolve the initial callback with the modified dynamoData
         set(dynamoData, self.config.contentPath, content);
   
-        return response;
+        return {
+          ...response,
+          Attributes: dynamoData,
+        };
       })
     }
 
