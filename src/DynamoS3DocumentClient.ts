@@ -63,12 +63,12 @@ export class DynamoS3DocumentClient {
     };
 
     // Default dynamo methods
-    this.batchGet = this.config.clients.dynamo.batchGet;
-    this.batchWrite = this.config.clients.dynamo.batchWrite;
-    this.createSet = this.config.clients.dynamo.createSet;
-    this.query = this.config.clients.dynamo.query;
-    this.scan = this.config.clients.dynamo.scan;
-    this.update = this.config.clients.dynamo.update;
+    this.batchGet = this.config.clients.dynamo.batchGet.bind(this.config.clients.dynamo);
+    this.batchWrite = this.config.clients.dynamo.batchWrite.bind(this.config.clients.dynamo);
+    this.createSet = this.config.clients.dynamo.createSet.bind(this.config.clients.dynamo);
+    this.query = this.config.clients.dynamo.query.bind(this.config.clients.dynamo);
+    this.scan = this.config.clients.dynamo.scan.bind(this.config.clients.dynamo);
+    this.update = this.config.clients.dynamo.update.bind(this.config.clients.dynamo);
   }
 
   // Default Dynamo method types
