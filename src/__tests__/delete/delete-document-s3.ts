@@ -5,9 +5,7 @@ import * as AWS from 'aws-sdk';
 
 const bucketName = 'some-s3-bucket-name';
 const path = 'path/to/document';
-const contentLarge = {
-  somedata: cryto.randomBytes(400 * 1024)
-};
+const contentLarge = cryto.randomBytes(400 * 1024);
 
 it('deletes a document (large - S3)', async () => {
   awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
@@ -32,7 +30,7 @@ it('deletes a document (large - S3)', async () => {
     expect(params).toHaveProperty('Key', path);
     expect(params).toHaveProperty('Bucket', bucketName);
     const data: AWS.S3.GetObjectOutput = {
-      Body: Buffer.from(JSON.stringify(contentLarge), 'utf8'),
+      Body: contentLarge,
     };
     return callback(null, data);
   });

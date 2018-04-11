@@ -1,7 +1,8 @@
 export function s3BodyBufferToJson(data: any) {
   let Body;
   try {
-    Body = JSON.parse(data.Body);
+    Body = data.Body
+    Body = JSON.parse(Body);
   } catch (e) { }
   return {
     ...data,
