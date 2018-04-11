@@ -7,23 +7,25 @@ const s3Content = 'S3 Content';
 const dynamoContent = 'Dynamo Content';
 
 it('gets a document (dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
     expect(params).toHaveProperty('Key.Path', path);
-    return callback(null, {
+    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
       Item: {
         Path: params.Key.Path,
         Content: dynamoContent,
       },
-    });
+    };
+    return callback(null, data);
   });
 
-  const DynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
-  const result = await DynamoS3DocumentClient.get({
+  const result = await dynamoS3DocumentClient.get({
+    TableName: 'test-table',
     Key: {
       Path: path,
     },
-  });
+  }).promise();
 
   expect(result).toHaveProperty('Item.Path', path);
   expect(result).toHaveProperty('Item.Content', dynamoContent);
@@ -31,9 +33,9 @@ it('gets a document (dynamo)', async () => {
 });
 
 it('gets a document (S3)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
     expect(params).toHaveProperty('Key.Path', path);
-    return callback(null, {
+    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
       Item: {
         Path: params.Key.Path,
         Content: dynamoContent,
@@ -41,30 +43,27 @@ it('gets a document (S3)', async () => {
           S3Key: path,
         },
       },
-    });
+    }
+    return callback(null, data);
   });
 
-  awsMock.mock('S3', 'getObject', (params, callback) => {
+  awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
     expect(params).toHaveProperty('Key', path);
     expect(params).toHaveProperty('Bucket', bucketName);
-    return callback(null, {
+    const data: AWS.S3.GetObjectOutput = {
       Body: Buffer.from(JSON.stringify(s3Content), 'utf8'),
-    });
+    };
+    return callback(null, data);
   });
 
-  const dynamoS3DocumentClient = new DynamoS3DocumentClient({
-    clients: {
-      dynamo: new AWS.DynamoDB.DocumentClient(),
-      s3: new AWS.S3(),
-    },
-    bucketName,
-  });
+  const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.get({
+    TableName: 'test-table',
     Key: {
       Path: path,
     },
-  });
+  }).promise();
 
   expect(result).toHaveProperty('Item.Path', path);
   expect(result).toHaveProperty('Item.Content', s3Content);

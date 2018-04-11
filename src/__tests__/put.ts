@@ -1,4 +1,5 @@
 import * as awsMock from 'aws-sdk-mock';
+import * as AWS from 'aws-sdk';
 import * as cryto from 'crypto';
 import { DynamoS3DocumentClient } from '../DynamoS3DocumentClient';
 
@@ -8,77 +9,75 @@ const contentSmall = 'small content';
 const contentLarge = cryto.randomBytes(400 * 1024);
 
 it('puts a document (small - dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
     return callback(null, {});
   });
 
-  awsMock.mock('DynamoDB.DocumentClient', 'put', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
     expect(params.Item).toHaveProperty('Path', path);
     expect(params.Item).toHaveProperty('Content', contentSmall);
-
-    return callback(null, {
-      Item: {
+    const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
+      Attributes: {
         Path: params.Item.Path,
         Attributes: params.Item.Attributes,
         Content: params.Item.Content,
       },
-    });
+    }
+    return callback(null, data);
   });
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.put({
-    TableName: 'table',
+    TableName: 'test-table',
     Item: {
       Path: path,
       Content: contentSmall,
     },
-  });
+  }).promise();
 
-  expect(result).toHaveProperty('Item.Path', path);
-  expect(result).toHaveProperty('Item.Content', contentSmall);
+  expect(result.Attributes).toHaveProperty('Path', path);
+  expect(result.Attributes).toHaveProperty('Content', contentSmall);
 });
 
 it('puts a document (large - S3)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
     return callback(null, {});
   });
 
-  awsMock.mock('DynamoDB.DocumentClient', 'put', (params, callback) => {
+  awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
     expect(params.Item).toHaveProperty('Path', path);
     expect(params.Item).toHaveProperty('Content', undefined);
     expect(params.Item).toHaveProperty('Attributes.S3Key', path);
-
-    return callback(null, {
-      Item: {
+    const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
+      Attributes: {
         Path: params.Item.Path,
         Attributes: params.Item.Attributes,
         Content: params.Item.Content,
       },
-    });
+    }
+    return callback(null, data);
   });
 
-  awsMock.mock('S3', 'putObject', (params, callback) => {
+  awsMock.mock('S3', 'putObject', (params: AWS.S3.PutObjectRequest, callback) => {
     expect(params).toHaveProperty('Key', path);
     expect(params).toHaveProperty('Bucket', bucketName);
     expect(params).toHaveProperty('Body', JSON.stringify(contentLarge));
-
-    return callback(null, {
-      Body: Buffer.from(params.Body, 'utf8'),
-    });
+    const data: AWS.S3.PutObjectOutput = {}
+    return callback(null, data);
   });
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 
   const result = await dynamoS3DocumentClient.put({
-    TableName: 'table',
+    TableName: 'test-table',
     Item: {
       Path: path,
       Content: contentLarge,
     },
-  });
+  }).promise();
 
-  expect(result).toHaveProperty('Item.Path', path);
-  expect(result).toHaveProperty('Item.Content', contentLarge);
-  expect(result).toHaveProperty('Item.Attributes.S3Key', path);
+  expect(result.Attributes).toHaveProperty('Path', path);
+  expect(result.Attributes).toHaveProperty('Content', contentLarge);
+  expect(result.Attributes).toHaveProperty('Attributes.S3Key', path);
 });

@@ -1,6 +1,7 @@
 import * as awsMock from 'aws-sdk-mock';
 import { DynamoS3DocumentClient } from '../DynamoS3DocumentClient';
 import * as cryto from 'crypto';
+import { IAwsMockCallback } from './types';
 
 const bucketName = 'some-s3-bucket-name';
 const path = 'path/to/document';
@@ -30,7 +31,7 @@ it('deletes a document (small - dynamo)', async () => {
     Key: {
       Path: path,
     },
-  });
+  }).promise();
 
   expect(result).toHaveProperty('Attributes.Path', path);
   expect(result).toHaveProperty('Attributes.Content', contentSmall);
@@ -79,7 +80,7 @@ it('deletes a document (large - S3)', async () => {
     Key: {
       Path: path,
     },
-  });
+  }).promise();
 
   expect(result).toHaveProperty('Attributes.Path', path);
   expect(result).toHaveProperty('Attributes.Content', contentLarge);
