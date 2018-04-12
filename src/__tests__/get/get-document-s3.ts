@@ -1,4 +1,5 @@
 import * as awsMock from 'aws-sdk-mock';
+import * as AWS from 'aws-sdk';
 import { DynamoS3DocumentClient } from '../../DynamoS3DocumentClient';
 
 const bucketName = 'some-s3-bucket-name';

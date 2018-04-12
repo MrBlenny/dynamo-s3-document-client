@@ -1,4 +1,5 @@
 import * as awsMock from 'aws-sdk-mock';
+import * as AWS from 'aws-sdk';
 import { DynamoS3DocumentClient } from '../../DynamoS3DocumentClient';
 
 const bucketName = 'some-s3-bucket-name';
@@ -12,13 +13,14 @@ it('deletes a document (small - dynamo)', async () => {
 
   awsMock.mock('DynamoDB.DocumentClient', 'delete', (params, callback) => {
     expect(params.Key).toHaveProperty('Path', path);
-
-    return callback(null, {
+    const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
       Attributes: {
         Path: params.Key.Path,
         Content: contentSmall,
       },
-    });
+    };
+    
+    return callback(null, data);
   });
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
