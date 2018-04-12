@@ -10,7 +10,7 @@ DynamoDB will saves files up to 400kB, any files larger than this will be saved 
 ## Status
 
 This lib wraps the basic `AWS.DynamoDB.DocumentClient` methods by adding calls to `S3` as needed. 
-Only some of these methods are currently implemented...
+Only some of these methods are currently implemented... Update is next on the list.
 
 - [x] delete
 - [x] get
@@ -22,7 +22,19 @@ Only some of these methods are currently implemented...
 - [x] query (no changed needed)
 - [ ] update
 
-## Usage
+## Notes about usage
+
+In order to use this you'll need to have a nested object format where the bulk of your content is on one Key. For example:
+
+```js
+Item: {
+  Content: 'This is where the large content goes - it can be any format', // Saved in Dynamo (Item < 400kB), Saved in S3 (Item > 400kB)
+  Attributes: {}, / Saved in Dynamo
+  Path: '', // Saved in Dynamo
+}
+```
+
+The names of these keys can be modified using configuration passed in to the `DynamoS3DocumentClient` constructor.
 
 ## Example
 
@@ -63,3 +75,9 @@ await dynamoS3DocumentClient.get({
   .then(console.log);
 
 ```
+
+## Development
+
+Publish using `yarn run publish`
+Test using `yarn test`
+Build dist with `yarn build`
