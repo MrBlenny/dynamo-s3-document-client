@@ -84,8 +84,8 @@ export class DynamoS3DocumentClient {
 
   // Modified Methods
   update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
-    const { TableName } = params;
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
+    const { TableName } = params;
 
     return {
       promise: async (): Promise<AWS.DynamoDB.DocumentClient.UpdateItemOutput> => {
@@ -192,9 +192,9 @@ export class DynamoS3DocumentClient {
   };
   
   put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
+    const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const documentSize = getDynamoByteSize(params.Item);
     const shouldUseS3 = checkShouldUseS3(documentSize, this.config);
-    const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
 
     const transformParams = () => {
       const paramsTransformed = cloneDeep(params);
