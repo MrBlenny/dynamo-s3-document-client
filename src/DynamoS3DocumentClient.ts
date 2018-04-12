@@ -3,6 +3,7 @@ import { get, set, cloneDeep } from 'lodash';
 import { checkShouldUseS3 } from './utils/checkShouldUseS3';
 import { getObjectFromS3 } from './utils/getObjectFromS3';
 import { getDynamoByteSize } from './utils/getDynamoByteSize';
+import { prototype } from 'aws-sdk/clients/cloudwatchevents';
 
 export interface IDynamoS3DocumentClientConfig {
   clients?: {
@@ -82,72 +83,75 @@ export class DynamoS3DocumentClient {
   scan: AWS.DynamoDB.DocumentClient['scan'];
 
   // Modified Methods
-  update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
-    // AWS.Request<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>
+  async update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
+    const { TableName } = params;
+    const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
+    const getItem = this.get(params);
+    const oldPromise = getItem.promise;
+    const self = this;
 
-
-    // const dynamoUpdate = this.config.clients.dynamo.update(params);
-    // const oldPromise = dynamoUpdate.promise;
-    // const self = this;
-    // dynamoUpdate.promise = function() {
-    //   return oldPromise.apply(this, arguments)
-    //     .then(async (response: AWS.DynamoDB.DocumentClient.UpdateItemOutput) => {
-    //       // Updated file saved to DynamoDB without any issue
-    //       return response;
-    //     })
-    //     .catch(async (error: AWS.AWSError) => {
-    //       // File was too large to save to DynamoDB, we probably want to Save to S3...
-    //       // Get the file from Dynamo.
-    //       self.config.clients.dynamo.get(params).promise()
-    //         .then((data) => {
-    //           checkShouldUseS3(data.Item, self.config);
-
-    //         })
-    //     })
-    // }
-    // return dynamoUpdate
-
-    // Get the item from Dynamo/S3
-    return this.get(params).promise()
-      .then((response) => {
-        const s3Key = get(response.Item, this.config.s3KeyPath);
-        const newItem = getNewItem(response.Item);
-        const documentSize = getDynamoByteSize(newItem);
-        const shouldUseS3 = checkShouldUseS3(documentSize, this.config);
-        if (!shouldUseS3) {
-
+    getItem.promise = async function() {
+      return oldPromise.apply(this, arguments).then((getResponse: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
+        const oldItem = getResponse.Item;
+        const newItem = getNewItem(getResponse.Item);
+        const oldShouldUseS3 = checkShouldUseS3(getDynamoByteSize(oldItem), self.config);
+        const newShouldUseS3 = checkShouldUseS3(getDynamoByteSize(newItem), self.config);
+        const Path = get(params.Key, pathPath);
+        const newContent = get(newItem, contentPath);
+    
+        if (!oldShouldUseS3 && !newShouldUseS3) {
+          // Save to Dynamo
+          return dynamo.update(params)
+        } else if (!oldShouldUseS3 && newShouldUseS3) {
+          // Save from Dynamo -> S3
+          return Promise.all([
+            // Delete from dynamo
+            dynamo.delete(params),
+            // Save to S3
+            s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) })
+          ])
+        } else if (oldShouldUseS3 && !newShouldUseS3) {
+          // Save from S3 -> Dynamo
+          return Promise.all([
+            // Delete from S3
+            s3.deleteObject({ Bucket, Key: Path }),
+            // Save to Dynamo
+            dynamo.put({ TableName, Item: newItem })
+          ])
+        } else {
+          // S3 to S3
+          return s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) });
         }
-
-        console.log(newItem);
       })
+    }
+
+    return getItem
   };
 
   delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError> {
     const dynamoDelete = this.config.clients.dynamo.delete(params);
     const oldPromise = dynamoDelete.promise;
-    const config = this.config;
+    const self = this;
+    const { bucketName: Bucket, contentPath, s3KeyPath, clients: { s3 } } = this.config;
     dynamoDelete.promise = function() {
       return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.DeleteItemOutput) => {
         const dynamoData = response.Attributes || {};
         // Get the S3 key
-        const s3Key = get(dynamoData, config.s3KeyPath);
+        const s3Key = get(dynamoData, s3KeyPath);
 
         // If the dynamo result has an S3 key, fetch data from S3
-        const s3Data = s3Key && await getObjectFromS3(s3Key, config);
+        const s3Data = s3Key && await getObjectFromS3(s3Key, self.config);
 
         // If there is a Body on the S3 data, mutate the dynamo file content
         const s3Content = get(s3Data, 'Body');
 
         if (s3Content) {
-          set(dynamoData, config.contentPath, s3Content);
+          set(dynamoData, contentPath, s3Content);
         }
 
         // Delete the item from S3
         if (s3Key) {
-          await config.clients.s3.deleteObject({
-            Bucket: config.bucketName,
-            Key: s3Key,
-          }).promise();
+          await s3.deleteObject({ Bucket, Key: s3Key }).promise();
         }
 
         // Return the possibly mutated dynamo data
@@ -161,26 +165,27 @@ export class DynamoS3DocumentClient {
   get(params: AWS.DynamoDB.DocumentClient.GetItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.GetItemOutput, AWS.AWSError> {
     const dynamoGet = this.config.clients.dynamo.get(params);
     const oldPromise = dynamoGet.promise;
-    const config = this.config;
+    const self = this;
+    const { contentPath, s3KeyPath } = this.config;
     dynamoGet.promise = function() {
       return oldPromise.apply(this, arguments).then(async (response: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
         const dynamoData = response.Item || {};
+
         // Get the S3 key
-        const s3Key = get(dynamoData, config.s3KeyPath);
-  
+        const s3Key = get(dynamoData, s3KeyPath);
+
         // If the dynamo result has an S3 key, fetch data from S3
-        const s3Data = s3Key && await getObjectFromS3(s3Key, config);
-  
+        const s3Data = s3Key && await getObjectFromS3(s3Key, self.config);
+
         // If there is a Body on the S3 data, mutate the dynamo file content
         const s3Content = get(s3Data, 'Body');
         if (s3Content) {
-          set(dynamoData, config.contentPath, s3Content);
+          set(dynamoData, contentPath, s3Content);
         }
-  
         return response
       })
     }
-
+    
     return dynamoGet
   };
   
