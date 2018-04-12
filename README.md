@@ -48,7 +48,6 @@ To create a client with the following functionality.
 
 ```ts
 import { DynamoS3DocumentClient } from 'dynamo-s3-document-client';
-import * as AWS from 'aws-sdk';
 import * as crypto from 'cryto';
 
 // Create a client that can save files up to 10MB.
