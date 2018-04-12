@@ -9,7 +9,8 @@
     "test": "jest src",
     "build": "rm -rf build && mkdir build && yarn tsc",
     "build:link": "yarn build && cd build && yarn link",
-    "lint": "tslint --project tsconfig.lint.json"
+    "lint": "tslint --project tsconfig.lint.json",
+    "publish": "np"
   },
   "repository": {
     "type": "git",
