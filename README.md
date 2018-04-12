@@ -9,7 +9,8 @@ DynamoDB will saves files up to 400kB, any files larger than this will be saved 
 
 ## Status
 
-Completed methods:
+This lib wraps the basic `AWS.DynamoDB.DocumentClient` methods by adding calls to `S3` as needed. 
+Only some of these methods are currently implemented...
 
 - [x] delete
 - [x] get
@@ -20,7 +21,10 @@ Completed methods:
 - [x] createSet (no changed needed)
 - [x] query (no changed needed)
 - [ ] update
-### Example
+
+## Usage
+
+## Example
 
 To create a client with the following functionality.
 * Item <= 400kB - **Save to DynamoDB**
@@ -37,30 +41,6 @@ const dynamoS3DocumentClient = new DynamoS3DocumentClient({
   bucketName: 'the-name-of-an-s3-bucket',
   maxDocumentSize: 10 * 1024 * 1024, // 10MB max
 })
-
-// Use this just like you would AWS.DynamoDB.DocumentClient
-
-// Save a small file (this will save to DynamoDB)
-await dynamoS3DocumentClient.put({
-  TableName: 'test-table',
-  Item: {
-    Path: 'path/of/the/file',
-    Attributes: {},
-    Content: {
-      here: 'is where your content goes',
-    }
-  }
-}).promise()
-  .then(console.log);
-
-// Read the small file
-await dynamoS3DocumentClient.get({
-  TableName: 'test-table',
-  Key: {
-    Path: 'path/of/the/file',
-  }
-}).promise()
-  .then(console.log);
 
 // Save a large file (this will save the Content to S3 and the Path, Attributes to Dynamo)
 await dynamoS3DocumentClient.put({
