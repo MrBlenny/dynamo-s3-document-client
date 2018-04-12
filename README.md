@@ -28,9 +28,12 @@ In order to use this you'll need to have a nested object format where the bulk o
 
 ```js
 Item: {
-  Content: 'This is where the large content goes - it can be any format', // Saved in Dynamo (Item < 400kB), Saved in S3 (Item > 400kB)
-  Attributes: {}, / Saved in Dynamo
-  Path: '', // Saved in Dynamo
+  // Saved in Dynamo (Item < 400kB), Saved in S3 (Item > 400kB)
+  Content: 'This is where the large content goes - it can be any format', 
+  // Saved in Dynamo
+  Attributes: {}, 
+  // Saved in Dynamo
+  Path: '', 
 }
 ```
 
@@ -75,6 +78,9 @@ await dynamoS3DocumentClient.get({
   .then(console.log);
 
 ```
+
+## Configuration
+[IDynamoS3DocumentClientConfig](./src/DynamoS3DocumentClient.ts)
 
 ## Development
 
