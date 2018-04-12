@@ -1,4 +1,3 @@
-import { getDynamoByteSize } from './getDynamoByteSize';
 import { IDynamoS3DocumentClientConfigDefaulted } from '../DynamoS3DocumentClient';
 
 const dynamoMaxDocumentSize = 4 * 1024; // 400 KB - Greater than this, will revert to S3
@@ -11,8 +10,7 @@ const dynamoMaxDocumentSize = 4 * 1024; // 400 KB - Greater than this, will reve
  * @param opts DynamoDB method call parameters object
  * @returns boolean
  */
-export function checkShouldUseS3(item: any, config: IDynamoS3DocumentClientConfigDefaulted) {
-  const documentSize = getDynamoByteSize(item);
+export function checkShouldUseS3(documentSize: number, config: IDynamoS3DocumentClientConfigDefaulted) {
   const isOverDynamoLimit = documentSize > dynamoMaxDocumentSize;
   const isOverS3SizeLimit = documentSize > config.maxDocumentSize;
 

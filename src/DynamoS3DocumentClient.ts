@@ -2,6 +2,7 @@ import * as AWS from 'aws-sdk';
 import { get, set, cloneDeep } from 'lodash';
 import { checkShouldUseS3 } from './utils/checkShouldUseS3';
 import { getObjectFromS3 } from './utils/getObjectFromS3';
+import { getDynamoByteSize } from './utils/getDynamoByteSize';
 
 export interface IDynamoS3DocumentClientConfig {
   clients?: {
@@ -33,6 +34,8 @@ export interface IDynamoS3DocumentClientConfigDefaulted {
   pathPath: string;
   maxDocumentSize: number;
 };
+
+export type IGetNewItem = (s3Data: any) => any;
 
 /**
  * The DynamoS3DocumentClient can be treated as though it were just a standard AWS.DynamoDB.DocumentClient
@@ -68,7 +71,6 @@ export class DynamoS3DocumentClient {
     this.createSet = this.config.clients.dynamo.createSet.bind(this.config.clients.dynamo);
     this.query = this.config.clients.dynamo.query.bind(this.config.clients.dynamo);
     this.scan = this.config.clients.dynamo.scan.bind(this.config.clients.dynamo);
-    this.update = this.config.clients.dynamo.update.bind(this.config.clients.dynamo);
   }
 
   // Default Dynamo method types
@@ -78,9 +80,48 @@ export class DynamoS3DocumentClient {
   createSet: AWS.DynamoDB.DocumentClient['createSet'];
   query: AWS.DynamoDB.DocumentClient['query'];
   scan: AWS.DynamoDB.DocumentClient['scan'];
-  update: AWS.DynamoDB.DocumentClient['update'];
 
   // Modified Methods
+  update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
+    // AWS.Request<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>
+
+
+    // const dynamoUpdate = this.config.clients.dynamo.update(params);
+    // const oldPromise = dynamoUpdate.promise;
+    // const self = this;
+    // dynamoUpdate.promise = function() {
+    //   return oldPromise.apply(this, arguments)
+    //     .then(async (response: AWS.DynamoDB.DocumentClient.UpdateItemOutput) => {
+    //       // Updated file saved to DynamoDB without any issue
+    //       return response;
+    //     })
+    //     .catch(async (error: AWS.AWSError) => {
+    //       // File was too large to save to DynamoDB, we probably want to Save to S3...
+    //       // Get the file from Dynamo.
+    //       self.config.clients.dynamo.get(params).promise()
+    //         .then((data) => {
+    //           checkShouldUseS3(data.Item, self.config);
+
+    //         })
+    //     })
+    // }
+    // return dynamoUpdate
+
+    // Get the item from Dynamo/S3
+    return this.get(params).promise()
+      .then((response) => {
+        const s3Key = get(response.Item, this.config.s3KeyPath);
+        const newItem = getNewItem(response.Item);
+        const documentSize = getDynamoByteSize(newItem);
+        const shouldUseS3 = checkShouldUseS3(documentSize, this.config);
+        if (!shouldUseS3) {
+
+        }
+
+        console.log(newItem);
+      })
+  };
+
   delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError> {
     const dynamoDelete = this.config.clients.dynamo.delete(params);
     const oldPromise = dynamoDelete.promise;
@@ -144,7 +185,8 @@ export class DynamoS3DocumentClient {
   };
   
   put(params: AWS.DynamoDB.DocumentClient.PutItemInput): AWS.Request<AWS.DynamoDB.DocumentClient.PutItemOutput, AWS.AWSError> {
-    const shouldUseS3 = checkShouldUseS3(params.Item, this.config);
+    const documentSize = getDynamoByteSize(params.Item);
+    const shouldUseS3 = checkShouldUseS3(documentSize, this.config);
     const transformParams = () => {
       const paramsTransformed = cloneDeep(params);
       // If we should use s3, the s3Key and content must be transformed
