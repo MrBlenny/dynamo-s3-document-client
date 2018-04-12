@@ -82,7 +82,10 @@ export class DynamoS3DocumentClient {
   query: AWS.DynamoDB.DocumentClient['query'];
   scan: AWS.DynamoDB.DocumentClient['scan'];
 
-  // Modified Methods
+  /**
+   * Updates/patches Dynamo + S3 entries.
+   * IMPORTANT: You must pass in 'getNewItem' otherwise S3 will not know how to update.
+   */
   update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const { TableName } = params;
@@ -135,6 +138,9 @@ export class DynamoS3DocumentClient {
     }
   };
 
+  /**
+   * Deletes items from Dynamo and also from S3 if a matching item is found.
+   */
   delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput) {
     const { bucketName: Bucket, contentPath, s3KeyPath, clients: { s3 } } = this.config;
 
@@ -167,6 +173,9 @@ export class DynamoS3DocumentClient {
     }
   };
 
+  /**
+   * Gets an item from Dynamo. If an S3Key is found, it will also get the item content from S3.
+   */
   get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
     const { contentPath, s3KeyPath } = this.config;
 
@@ -191,6 +200,9 @@ export class DynamoS3DocumentClient {
     }
   };
   
+  /**
+   * Puts and item to Dynamo. If the size is >400kB, the item content will be saved to S3.
+   */
   put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const documentSize = getDynamoByteSize(params.Item);
