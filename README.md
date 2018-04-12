@@ -1,5 +1,7 @@
 # Dynamo S3 Document Client
 
+[![CircleCI](https://circleci.com/gh/MrBlenny/dynamo-s3-document-client.svg?style=svg)](https://circleci.com/gh/MrBlenny/dynamo-s3-document-client)
+
 This is just like `AWS.DynamoDB.DocumentClient` from the `aws-sdk` but saves oversize files to AWS. 
 
 DynamoDB will saves files up to 400kB, any files larger than this will be saved in S3.
