@@ -83,15 +83,15 @@ export class DynamoS3DocumentClient {
   scan: AWS.DynamoDB.DocumentClient['scan'];
 
   // Modified Methods
-  async update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
+  update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem): AWS.Request<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError> {
     const { TableName } = params;
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const getItem = this.get(params);
     const oldPromise = getItem.promise;
     const self = this;
 
-    getItem.promise = async function() {
-      return oldPromise.apply(this, arguments).then((getResponse: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
+    getItem.promise = function() {
+      return oldPromise.apply(this, arguments).then(async (getResponse: AWS.DynamoDB.DocumentClient.GetItemOutput) => {
         const oldItem = getResponse.Item;
         const newItem = getNewItem(getResponse.Item);
         const oldShouldUseS3 = checkShouldUseS3(getDynamoByteSize(oldItem), self.config);
@@ -99,29 +99,41 @@ export class DynamoS3DocumentClient {
         const Path = get(params.Key, pathPath);
         const newContent = get(newItem, contentPath);
     
-        if (!oldShouldUseS3 && !newShouldUseS3) {
-          // Save to Dynamo
-          return dynamo.update(params)
-        } else if (!oldShouldUseS3 && newShouldUseS3) {
-          // Save from Dynamo -> S3
-          return Promise.all([
-            // Delete from dynamo
-            dynamo.delete(params),
-            // Save to S3
-            s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) })
-          ])
-        } else if (oldShouldUseS3 && !newShouldUseS3) {
-          // Save from S3 -> Dynamo
-          return Promise.all([
-            // Delete from S3
-            s3.deleteObject({ Bucket, Key: Path }),
+        const sendUpdateRequests = () => {
+          if (!oldShouldUseS3 && !newShouldUseS3) {
             // Save to Dynamo
-            dynamo.put({ TableName, Item: newItem })
-          ])
-        } else {
-          // S3 to S3
-          return s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) });
+            return dynamo.update(params)
+  
+          } else if (!oldShouldUseS3 && newShouldUseS3) {
+            // Save from Dynamo -> S3
+            return Promise.all([
+              // Delete from dynamo
+              dynamo.delete(params),
+              // Save to S3
+              s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) })
+            ]);            
+          } else if (oldShouldUseS3 && !newShouldUseS3) {
+            // Save from S3 -> Dynamo
+            return Promise.all([
+              // Delete from S3
+              s3.deleteObject({ Bucket, Key: Path }),
+              // Save to Dynamo
+              dynamo.put({ TableName, Item: newItem })
+            ])
+          } else {
+            // S3 to S3
+            return s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) });
+          }
         }
+
+        // Send the update requests
+        await sendUpdateRequests()
+
+        const response: AWS.DynamoDB.DocumentClient.UpdateItemOutput = {
+          Attributes: newItem,
+        }
+
+        return response
       })
     }
 
