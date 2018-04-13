@@ -9,10 +9,9 @@ DynamoDB will saves files up to 400kB, any files larger than this will be saved 
 ## Install
 `npm i dynamo-s3-document-client` or `yarn add dynamo-s3-document-client`
 
-## Status
+## Method Support
 
-This lib wraps the basic `AWS.DynamoDB.DocumentClient` methods by adding calls to `S3` as needed. 
-Only some of these methods are currently implemented... Update is next on the list.
+This lib wraps the basic `AWS.DynamoDB.DocumentClient` methods by adding calls to `S3` as needed.
 
 - [x] delete
 - [x] get
@@ -22,7 +21,10 @@ Only some of these methods are currently implemented... Update is next on the li
 - [ ] batchWrite
 - [x] createSet (no changed needed)
 - [x] query (no changed needed)
-- [ ] update
+- [x] update **Must pass in getNewItem**
+
+#### Important note about `update`
+Update requires intepreting dynamoDB's `UpdateExpression`. This is pretty difficult. In addition to `UpdateExpression` this method requires a `getNewItem` function to be passed in. This is used instead of `UpdateExpression` when determining how the update affects an item saved in S3.
 
 ## Notes about usage
 
