@@ -114,7 +114,15 @@ export class DynamoS3DocumentClient {
         }
 
         // Send the update requests
-        await sendUpdateRequests()
+        try {
+          await sendUpdateRequests()
+        } catch (e) {
+          if (Array.isArray(e)) {
+            throw e[0]
+          } else {
+            throw e
+          }
+        }
 
         return {
           Attributes: newItem,
