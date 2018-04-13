@@ -3,7 +3,6 @@ import { get, set, cloneDeep } from 'lodash';
 import { checkShouldUseS3 } from './utils/checkShouldUseS3';
 import { getObjectFromS3 } from './utils/getObjectFromS3';
 import { getDynamoByteSize } from './utils/getDynamoByteSize';
-import { prototype } from 'aws-sdk/clients/cloudwatchevents';
 
 export interface IDynamoS3DocumentClientConfig {
   clients?: {
