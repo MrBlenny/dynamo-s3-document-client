@@ -130,7 +130,7 @@ export class DynamoS3DocumentClient {
         // Send the update requests
         try {
           const processString = getProcessString();
-
+          
           await processes[processString]()
         } catch (e) {
           if (Array.isArray(e)) {
