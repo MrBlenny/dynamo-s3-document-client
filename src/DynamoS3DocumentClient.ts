@@ -105,7 +105,6 @@ export class DynamoS3DocumentClient {
           if (!oldShouldUseS3 && !newShouldUseS3) {
             // Save to Dynamo
             return dynamo.update(params)
-  
           } else if (!oldShouldUseS3 && newShouldUseS3) {
             // Save from Dynamo -> S3
             return Promise.all([

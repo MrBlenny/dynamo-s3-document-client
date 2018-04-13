@@ -1,11 +1,11 @@
 import * as awsMock from 'aws-sdk-mock';
 import { DynamoS3DocumentClient } from '../../DynamoS3DocumentClient';
-import * as cryto from 'crypto';
+import * as crypto from 'crypto';
 import * as AWS from 'aws-sdk';
 
 const bucketName = 'some-s3-bucket-name';
 const path = 'path/to/document';
-const contentLarge = cryto.randomBytes(400 * 1024);
+const contentLarge = crypto.randomBytes(400 * 1024);
 
 it('deletes a document (large - S3)', async () => {
   awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
