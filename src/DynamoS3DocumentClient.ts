@@ -3,6 +3,7 @@ import { get, set, cloneDeep } from 'lodash';
 import { checkShouldUseS3 } from './utils/checkShouldUseS3';
 import { getObjectFromS3 } from './utils/getObjectFromS3';
 import { getDynamoByteSize } from './utils/getDynamoByteSize';
+import { IDynamoS3DocumentClientConfigDefaulted, IGetNewItem, PromiseMethod } from './types';
 
 export interface IDynamoS3DocumentClientConfig {
   clients?: {
@@ -22,20 +23,6 @@ export interface IDynamoS3DocumentClientConfig {
   /** Maximum Document size to save to S3 */
   maxDocumentSize?: number;
 };
-
-export interface IDynamoS3DocumentClientConfigDefaulted {
-  clients: {
-    dynamo: AWS.DynamoDB.DocumentClient,
-    s3: AWS.S3,
-  },
-  bucketName: string;
-  contentPath: string;
-  s3KeyPath: string;
-  pathPath: string;
-  maxDocumentSize: number;
-};
-
-export type IGetNewItem = (s3Data: any) => any;
 
 /**
  * The DynamoS3DocumentClient can be treated as though it were just a standard AWS.DynamoDB.DocumentClient
@@ -85,12 +72,12 @@ export class DynamoS3DocumentClient {
    * Updates/patches Dynamo + S3 entries.
    * IMPORTANT: You must pass in 'getNewItem' otherwise S3 will not know how to update.
    */
-  update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem) {
+  update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem): PromiseMethod<AWS.DynamoDB.DocumentClient.UpdateItemOutput> {
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const { TableName } = params;
 
     return {
-      promise: async (): Promise<AWS.DynamoDB.DocumentClient.UpdateItemOutput> => {
+      promise: async () => {
         const getResponse = await this.get(params).promise();
         const oldItem = getResponse.Item;
         const newItem = getNewItem(getResponse.Item);
@@ -139,7 +126,7 @@ export class DynamoS3DocumentClient {
   /**
    * Deletes items from Dynamo and also from S3 if a matching item is found.
    */
-  delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput) {
+  delete(params: AWS.DynamoDB.DocumentClient.DeleteItemInput): PromiseMethod<AWS.DynamoDB.DocumentClient.DeleteItemOutput> {
     const { bucketName: Bucket, contentPath, s3KeyPath, clients: { s3 } } = this.config;
 
     return {
@@ -174,7 +161,7 @@ export class DynamoS3DocumentClient {
   /**
    * Gets an item from Dynamo. If an S3Key is found, it will also get the item content from S3.
    */
-  get(params: AWS.DynamoDB.DocumentClient.GetItemInput) {
+  get(params: AWS.DynamoDB.DocumentClient.GetItemInput): PromiseMethod<AWS.DynamoDB.DocumentClient.GetItemOutput> {
     const { contentPath, s3KeyPath } = this.config;
 
     return {
@@ -201,7 +188,7 @@ export class DynamoS3DocumentClient {
   /**
    * Puts and item to Dynamo. If the size is >400kB, the item content will be saved to S3.
    */
-  put(params: AWS.DynamoDB.DocumentClient.PutItemInput) {
+  put(params: AWS.DynamoDB.DocumentClient.PutItemInput): PromiseMethod<AWS.DynamoDB.DocumentClient.PutItemOutput> {
     const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
     const documentSize = getDynamoByteSize(params.Item);
     const shouldUseS3 = checkShouldUseS3(documentSize, this.config);

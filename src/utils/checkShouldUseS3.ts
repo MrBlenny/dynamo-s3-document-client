@@ -1,4 +1,4 @@
-import { IDynamoS3DocumentClientConfigDefaulted } from '../DynamoS3DocumentClient';
+import { IDynamoS3DocumentClientConfigDefaulted } from '../types';
 
 const dynamoMaxDocumentSize = 4 * 1024; // 400 KB - Greater than this, will revert to S3
 
