@@ -4,7 +4,7 @@ import * as AWS from 'aws-sdk';
 
 // Config
 const bucketName = 'some-s3-bucket-name';
-const path = 'path/to/document';
+const path = 'path/to/document-dynamo';
 const content = {
   here: 'is-some-content-to-be-saved-in-dynamo', 
 };

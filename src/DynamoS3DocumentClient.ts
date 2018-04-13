@@ -73,49 +73,65 @@ export class DynamoS3DocumentClient {
    * IMPORTANT: You must pass in 'getNewItem' otherwise S3 will not know how to update.
    */
   update(params: AWS.DynamoDB.DocumentClient.UpdateItemInput, getNewItem: IGetNewItem): PromiseMethod<AWS.DynamoDB.DocumentClient.UpdateItemOutput> {
-    const { bucketName: Bucket, contentPath, pathPath, clients: { s3, dynamo } } = this.config;
+    const { bucketName: Bucket, contentPath, pathPath, s3KeyPath, clients: { s3, dynamo } } = this.config;
     const { TableName } = params;
 
     return {
       promise: async () => {
-        const getResponse = await this.get(params).promise();
+        const getResponse = await this.get(params).promise(); 
         const oldItem = getResponse.Item;
         const newItem = getNewItem(getResponse.Item);
         const oldShouldUseS3 = checkShouldUseS3(getDynamoByteSize(oldItem), this.config);
         const newShouldUseS3 = checkShouldUseS3(getDynamoByteSize(newItem), this.config);
         const Path = get(params.Key, pathPath);
         const newContent = get(newItem, contentPath);
-    
-        // Create the updateRequests function, we'll use this soon
-        const sendUpdateRequests = () => {
+
+        const getProcessString = () => {
           if (!oldShouldUseS3 && !newShouldUseS3) {
-            // Save to Dynamo
-            return dynamo.update(params)
+            return 'stays-in-dynamo'
           } else if (!oldShouldUseS3 && newShouldUseS3) {
-            // Save from Dynamo -> S3
-            return Promise.all([
-              // Delete from dynamo
-              dynamo.delete(params),
-              // Save to S3
-              s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) })
-            ]);            
+            return 'move-from-dynamo-to-s3'
           } else if (oldShouldUseS3 && !newShouldUseS3) {
-            // Save from S3 -> Dynamo
-            return Promise.all([
-              // Delete from S3
-              s3.deleteObject({ Bucket, Key: Path }),
-              // Save to Dynamo
-              dynamo.put({ TableName, Item: newItem })
-            ])
+            return 'move-from-s3-to-dynamo'
           } else {
-            // S3 to S3
-            return s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) });
+            return 'stays-in-s3'
           }
         }
 
+        const processes = {
+          'stays-in-dynamo': () => dynamo.update(params).promise(),
+          'stays-in-s3': () => s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) }).promise(),
+          'move-from-dynamo-to-s3': () => {
+            const newItemForDynamo = cloneDeep(newItem);
+            // Set content to undefined
+            set(newItemForDynamo, contentPath, undefined);
+            // Set the s3Key to the path
+            set(newItemForDynamo, s3KeyPath, get(newItem, pathPath));
+            // Send it
+            return Promise.all([
+              // Delete content from dynamo
+              dynamo.put({ TableName, Item: newItemForDynamo }).promise(),
+              // Save to S3
+              s3.putObject({ Bucket, Key: Path, Body: JSON.stringify(newContent) }).promise()
+            ])
+          },
+          'move-from-s3-to-dynamo': () => {
+            const newItemForDynamo = cloneDeep(newItem);
+            set(newItemForDynamo, s3KeyPath, undefined);
+            return Promise.all([
+              // Delete from S3
+              s3.deleteObject({ Bucket, Key: Path }).promise(),
+              // Save to Dynamo
+              dynamo.put({ TableName, Item: newItemForDynamo }).promise()
+            ])
+          }
+        }
+        
         // Send the update requests
         try {
-          await sendUpdateRequests()
+          const processString = getProcessString();
+
+          await processes[processString]()
         } catch (e) {
           if (Array.isArray(e)) {
             throw e[0]

@@ -5,32 +5,45 @@ import { createBytesString } from '../../utils/createBytesString';
 
 // Config
 const bucketName = 'some-s3-bucket-name';
-const path = 'path/to/document';
+const path = 'path/to/document-s3-to-dynamo';
 const content = {
   other: 'data',
   here: createBytesString(400 * 1024), 
 };
 const newContent = {
   other: 'data',
-  here: createBytesString(50 * 1024), 
+  here: 'this is some small content so it should save in dynamo', 
 };
 
-it('updates a document that becomes large (dynamo -> S3)', async () => {
+it('updates a document that becomes small (S3 -> dynamo)', async () => {
   awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
     const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
       Item: {
         Path: params.Key.Path,
-        Content: content,
+        Attributes: {
+          S3Key: params.Key.Path,
+        },
+        Content: undefined,
       },
     };
     return callback(null, data);
   });
 
+  awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
+    expect(params).toHaveProperty('Key', path);
+    expect(params).toHaveProperty('Bucket', bucketName);
+    const data: AWS.S3.GetObjectOutput = {
+      Body: Buffer.from(JSON.stringify(content), 'utf8'),
+    };
+    return callback(null, data);
+  });
+
   awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
-    expect(params.Item.Key).toHaveProperty('Path', path);
+    expect(params.Item).toHaveProperty('Path', path);
+    expect(params.Item).toHaveProperty('Content', newContent);
     const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
       Attributes: {
-        Path: params.Item.Key.Path,
+        Path: params.Item.Path,
         Content: newContent,
       },
     }

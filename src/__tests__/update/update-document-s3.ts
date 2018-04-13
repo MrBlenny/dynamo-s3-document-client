@@ -5,7 +5,7 @@ import { createBytesString } from '../../utils/createBytesString';
 
 // Config
 const bucketName = 'some-s3-bucket-name';
-const path = 'path/to/document';
+const path = 'path/to/document-s3';
 const content = {
   other: 'data',
   here: createBytesString(400 * 1024), 
@@ -20,15 +20,20 @@ it('updates a document (large - S3)', async () => {
     const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
       Item: {
         Path: params.Key.Path,
-        Content: content,
+        Attributes: {
+          S3Key: params.Key.Path,
+        },
+        Content: undefined,
       },
     };
     return callback(null, data);
   });
 
   awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
+    expect(params).toHaveProperty('Key', path);
+    expect(params).toHaveProperty('Bucket', bucketName);
     const data: AWS.S3.GetObjectOutput = {
-      Body: Buffer.from(JSON.stringify(newContent), 'utf8'),
+      Body: Buffer.from(JSON.stringify(content), 'utf8'),
     };
     return callback(null, data);
   });
