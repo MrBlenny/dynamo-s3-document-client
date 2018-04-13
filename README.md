@@ -21,7 +21,7 @@ This lib wraps the basic `AWS.DynamoDB.DocumentClient` methods by adding calls t
 - [ ] batchWrite
 - [x] createSet (no changed needed)
 - [x] query (no changed needed)
-- [x] update **Must pass in getNewItem**
+- [x] update - **Must pass in `getNewItem` function**
 
 #### Important note about `update`
 Update requires intepreting dynamoDB's `UpdateExpression`. This is pretty difficult. In addition to `UpdateExpression` this method requires a `getNewItem` function to be passed in. This is used instead of `UpdateExpression` when determining how the update affects an item saved in S3.
