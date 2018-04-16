@@ -8,42 +8,43 @@ const path = 'path/to/document';
 const contentLarge = crypto.randomBytes(400 * 1024);
 
 it('deletes a document (large - S3)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-    return callback(null, {});
-  });
-
-  awsMock.mock('DynamoDB.DocumentClient', 'delete', (params: AWS.DynamoDB.DocumentClient.DeleteItemInput, callback) => {
-    expect(params.Key).toHaveProperty('Path', path);
-    const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
-      Attributes: {
-        Path: params.Key.Path,
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+      return callback(null, {});
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'delete', (params: AWS.DynamoDB.DocumentClient.DeleteItemInput, callback) => {
+      expect(params.Key).toHaveProperty('Path', path);
+      const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
         Attributes: {
-          S3Key: path,
+          Path: params.Key.Path,
+          Attributes: {
+            S3Key: path,
+          },
+          Content: undefined,
         },
-        Content: undefined,
-      },
-    }
-    return callback(null, data);
-  });
-
-  awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
-    expect(params).toHaveProperty('Key', path);
-    expect(params).toHaveProperty('Bucket', bucketName);
-    const data: AWS.S3.GetObjectOutput = {
-      Body: contentLarge,
-    };
-    return callback(null, data);
-  });
-
-  awsMock.mock('S3', 'deleteObject', (params, callback) => {
-    expect(params).toHaveProperty('Key', path);
-    expect(params).toHaveProperty('Bucket', bucketName);
-
-    return callback(null, {});
-  });
+      }
+      return callback(null, data);
+    });
+  
+    awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
+      expect(params).toHaveProperty('Key', path);
+      expect(params).toHaveProperty('Bucket', bucketName);
+      const data: AWS.S3.GetObjectOutput = {
+        Body: contentLarge,
+      };
+      return callback(null, data);
+    });
+  
+    awsMock.mock('S3', 'deleteObject', (params, callback) => {
+      expect(params).toHaveProperty('Key', path);
+      expect(params).toHaveProperty('Bucket', bucketName);
+  
+      return callback(null, {});
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
-
 
   const result = await dynamoS3DocumentClient.delete({
     TableName: 'test-table',

@@ -157,3 +157,12 @@ await dynamoS3DocumentClient.update(params, getNewItem).promise()
 * Publish using `yarn run publish`
 * Test using `yarn test`
 * Build dist with `yarn build`
+
+### Integration tests
+
+In order to run the integration tests, please add the following environment variable:
+
+* AWS_DEFAULT_REGION
+* AWS_PROFILE
+* AWS_ACCESS_KEY_ID
+* BUCKET_NAME

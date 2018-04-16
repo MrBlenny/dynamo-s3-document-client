@@ -23,36 +23,39 @@ const dynamoExpressions = {
 };
 
 it('updates a document that becomes large (dynamo -> S3)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
-    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
-      Item: {
-        Path: params.Key.Path,
-        Content: content,
-      },
-    };
-    return callback(null, data);
-  });
-
-  awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
-    expect(params.Item).toHaveProperty('Path', path);
-    expect(params.Item.Attributes).toHaveProperty('S3Key', path);
-    expect(params.Item.Content).toBeUndefined();
-    const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
-      Attributes: {
-        Path: params.Item.Path,
-        Attributes: {
-          S3Key: path,
+  
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
+      const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
+        Item: {
+          Path: params.Key.Path,
+          Content: content,
         },
-        Content: undefined,
-      },
-    }
-    return callback(null, data);
-  });
-
-  awsMock.mock('S3', 'putObject', (params: AWS.S3.PutObjectRequest, callback) => {
-    const data: AWS.S3.PutObjectOutput = {};
-    return callback(null, data);
-  });
+      };
+      return callback(null, data);
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
+      expect(params.Item).toHaveProperty('Path', path);
+      expect(params.Item.Attributes).toHaveProperty('S3Key', path);
+      expect(params.Item.Content).toBeUndefined();
+      const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
+        Attributes: {
+          Path: params.Item.Path,
+          Attributes: {
+            S3Key: path,
+          },
+          Content: undefined,
+        },
+      }
+      return callback(null, data);
+    });
+  
+    awsMock.mock('S3', 'putObject', (params: AWS.S3.PutObjectRequest, callback) => {
+      const data: AWS.S3.PutObjectOutput = {};
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

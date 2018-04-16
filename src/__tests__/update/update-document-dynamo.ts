@@ -20,31 +20,33 @@ const dynamoExpressions = {
 };
 
 it('updates a document (small - dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
-    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
-      Item: {
-        Path: params.Key.Path,
-        Content: content,
-      },
-    };
-    return callback(null, data);
-  });
-
-  awsMock.mock('DynamoDB.DocumentClient', 'update', (params: AWS.DynamoDB.DocumentClient.UpdateItemInput, callback) => {
-    expect(params).toHaveProperty('UpdateExpression', dynamoExpressions.UpdateExpression);
-    expect(params).toHaveProperty('ExpressionAttributeValues', dynamoExpressions.ExpressionAttributeValues);
-    expect(params.Key).toHaveProperty('Path', path);
-    const data: AWS.DynamoDB.DocumentClient.UpdateItemOutput = {
-      Attributes: {
-        Path: params.Key.Path,
-        Attributes: {
-          S3Key: path,
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
+      const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
+        Item: {
+          Path: params.Key.Path,
+          Content: content,
         },
-        Content: newContent,
-      },
-    }
-    return callback(null, data);
-  });
+      };
+      return callback(null, data);
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'update', (params: AWS.DynamoDB.DocumentClient.UpdateItemInput, callback) => {
+      expect(params).toHaveProperty('UpdateExpression', dynamoExpressions.UpdateExpression);
+      expect(params).toHaveProperty('ExpressionAttributeValues', dynamoExpressions.ExpressionAttributeValues);
+      expect(params.Key).toHaveProperty('Path', path);
+      const data: AWS.DynamoDB.DocumentClient.UpdateItemOutput = {
+        Attributes: {
+          Path: params.Key.Path,
+          Attributes: {
+            S3Key: path,
+          },
+          Content: newContent,
+        },
+      }
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

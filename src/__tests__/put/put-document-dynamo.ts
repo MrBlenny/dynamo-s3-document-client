@@ -7,22 +7,25 @@ const path = 'path/to/document';
 const contentSmall = 'small content';
 
 it('puts a document (small - dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
-    return callback(null, {});
-  });
 
-  awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
-    expect(params.Item).toHaveProperty('Path', path);
-    expect(params.Item).toHaveProperty('Content', contentSmall);
-    const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
-      Attributes: {
-        Path: params.Item.Path,
-        Attributes: params.Item.Attributes,
-        Content: params.Item.Content,
-      },
-    }
-    return callback(null, data);
-  });
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
+      return callback(null, {});
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
+      expect(params.Item).toHaveProperty('Path', path);
+      expect(params.Item).toHaveProperty('Content', contentSmall);
+      const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
+        Attributes: {
+          Path: params.Item.Path,
+          Attributes: params.Item.Attributes,
+          Content: params.Item.Content,
+        },
+      }
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

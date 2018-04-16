@@ -7,21 +7,23 @@ const path = 'path/to/document';
 const contentSmall = 'small content';
 
 it('deletes a document (small - dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-    return callback(null, {});
-  });
-
-  awsMock.mock('DynamoDB.DocumentClient', 'delete', (params, callback) => {
-    expect(params.Key).toHaveProperty('Path', path);
-    const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
-      Attributes: {
-        Path: params.Key.Path,
-        Content: contentSmall,
-      },
-    };
-    
-    return callback(null, data);
-  });
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params, callback) => {
+      return callback(null, {});
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'delete', (params, callback) => {
+      expect(params.Key).toHaveProperty('Path', path);
+      const data: AWS.DynamoDB.DocumentClient.DeleteItemOutput = {
+        Attributes: {
+          Path: params.Key.Path,
+          Content: contentSmall,
+        },
+      };
+      
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

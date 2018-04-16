@@ -7,16 +7,19 @@ const path = 'path/to/document';
 const dynamoContent = 'Dynamo Content';
 
 it('gets a document (dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
-    expect(params).toHaveProperty('Key.Path', path);
-    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
-      Item: {
-        Path: params.Key.Path,
-        Content: dynamoContent,
-      },
-    };
-    return callback(null, data);
-  });
+
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
+      expect(params).toHaveProperty('Key.Path', path);
+      const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
+        Item: {
+          Path: params.Key.Path,
+          Content: dynamoContent,
+        },
+      };
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

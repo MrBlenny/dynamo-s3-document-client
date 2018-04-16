@@ -16,44 +16,47 @@ const newContent = {
 };
 
 it('updates a document that becomes small (S3 -> dynamo)', async () => {
-  awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
-    const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
-      Item: {
-        Path: params.Key.Path,
-        Attributes: {
-          S3Key: params.Key.Path,
+  
+  if (process.env.TEST_TYPE === 'mock') {
+    awsMock.mock('DynamoDB.DocumentClient', 'get', (params: AWS.DynamoDB.DocumentClient.GetItemInput, callback) => {
+      const data: AWS.DynamoDB.DocumentClient.GetItemOutput = {
+        Item: {
+          Path: params.Key.Path,
+          Attributes: {
+            S3Key: params.Key.Path,
+          },
+          Content: undefined,
         },
-        Content: undefined,
-      },
-    };
-    return callback(null, data);
-  });
-
-  awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
-    expect(params).toHaveProperty('Key', path);
-    expect(params).toHaveProperty('Bucket', bucketName);
-    const data: AWS.S3.GetObjectOutput = {
-      Body: Buffer.from(JSON.stringify(content), 'utf8'),
-    };
-    return callback(null, data);
-  });
-
-  awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
-    expect(params.Item).toHaveProperty('Path', path);
-    expect(params.Item).toHaveProperty('Content', newContent);
-    const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
-      Attributes: {
-        Path: params.Item.Path,
-        Content: newContent,
-      },
-    }
-    return callback(null, data);
-  });
-
-  awsMock.mock('S3', 'deleteObject', (params: AWS.S3.DeleteObjectRequest, callback) => {
-    const data: AWS.S3.DeleteObjectOutput = {};
-    return callback(null, data);
-  });
+      };
+      return callback(null, data);
+    });
+  
+    awsMock.mock('S3', 'getObject', (params: AWS.S3.GetObjectRequest, callback) => {
+      expect(params).toHaveProperty('Key', path);
+      expect(params).toHaveProperty('Bucket', bucketName);
+      const data: AWS.S3.GetObjectOutput = {
+        Body: Buffer.from(JSON.stringify(content), 'utf8'),
+      };
+      return callback(null, data);
+    });
+  
+    awsMock.mock('DynamoDB.DocumentClient', 'put', (params: AWS.DynamoDB.DocumentClient.PutItemInput, callback) => {
+      expect(params.Item).toHaveProperty('Path', path);
+      expect(params.Item).toHaveProperty('Content', newContent);
+      const data: AWS.DynamoDB.DocumentClient.PutItemOutput = {
+        Attributes: {
+          Path: params.Item.Path,
+          Content: newContent,
+        },
+      }
+      return callback(null, data);
+    });
+  
+    awsMock.mock('S3', 'deleteObject', (params: AWS.S3.DeleteObjectRequest, callback) => {
+      const data: AWS.S3.DeleteObjectOutput = {};
+      return callback(null, data);
+    });
+  }
 
   const dynamoS3DocumentClient = new DynamoS3DocumentClient({ bucketName });
 

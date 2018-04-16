@@ -6,7 +6,9 @@
   "description": "Just like AWS DynamoDB DocumentClient but saves oversize files in S3.",
   "main": "build/index.js",
   "scripts": {
-    "test": "jest src",
+    "test": "npm run test:mock; npm run test:integration;",
+    "test:mock": "TEST_TYPE=mock jest src",
+    "test:integration": "TEST_TYPE=integration jest src",
     "build": "rm -rf build && mkdir build && yarn tsc",
     "build:link": "yarn build && cd build && yarn link",
     "lint": "tslint --project tsconfig.lint.json",
