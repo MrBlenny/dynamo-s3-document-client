@@ -1,6 +1,6 @@
 {
   "name": "dynamo-s3-document-client",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "David Revay",
   "license": "ISC",
   "description": "Just like AWS DynamoDB DocumentClient but saves oversize files in S3.",
