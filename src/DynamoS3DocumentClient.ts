@@ -78,7 +78,11 @@ export class DynamoS3DocumentClient {
 
     return {
       promise: async () => {
-        const getResponse = await this.get(params).promise(); 
+        const getResponse = await this.get({
+          TableName: params.TableName,
+          Key: params.Key,
+        }).promise(); 
+
         const oldItem = getResponse.Item;
         const newItem = getNewItem(getResponse.Item);
         const oldShouldUseS3 = checkShouldUseS3(getDynamoByteSize(oldItem), this.config);

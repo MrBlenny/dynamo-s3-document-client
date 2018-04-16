@@ -8,5 +8,9 @@ import { getByteSize } from './getByteSize';
  * @return {integer}
  */
 export function getDynamoByteSize(content: any) {
-  return getByteSize(AWS.DynamoDB.Converter.marshall(content));
+  if (content) {
+    return getByteSize(AWS.DynamoDB.Converter.marshall(content));
+  } else {
+    return 0;
+  }
 }
