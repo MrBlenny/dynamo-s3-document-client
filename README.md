@@ -92,6 +92,7 @@ const dynamoS3DocumentClient = new DynamoS3DocumentClient({
 ```
 
 ### Save a large file.
+
 This will save the 'Content' to S3 and the'Path', 'Attributes' to Dynamo.
 
 ```ts
@@ -109,7 +110,7 @@ await dynamoS3DocumentClient.put({
 
 ### Get a file.
 
-This will get the 'Path' and 'Attributes' from Dynamo and the content from S3.
+This will get the 'Path' and 'Attributes' from Dynamo and the content from S3. Small files will only make a request to Dynamo.
 
 ```ts
 await dynamoS3DocumentClient.get({
@@ -123,7 +124,16 @@ await dynamoS3DocumentClient.get({
 
 ### Update a file.
 
-This will get the 'Path' and 'Attributes' from Dynamo and the content from S3.
+Note the `getNewItem` function which returns the new state of the content.
+
+There are 4 different types of update depending on how the file size changes. Keep these in mind if you are mocking your S3 responses. These processes are:
+
+* `stays-in-dynamo`        - Update Dynamo
+* `stays-in-s3`            - Put to S3
+* `move-from-dynamo-to-s3` - Put to Dynamo & Put to S3
+* `move-from-s3-to-dynamo` - Put to Dynamo & Delete from S3
+
+Usage:
 
 ```ts
 const getNewItem = currentItem => ({
@@ -150,7 +160,6 @@ const params = {
 
 await dynamoS3DocumentClient.update(params, getNewItem).promise()
   .then(console.log);
-
 
 ```
 
