@@ -1,6 +1,6 @@
 {
   "name": "dynamo-s3-document-client",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "author": "David Revay",
   "license": "ISC",
   "description": "Just like AWS DynamoDB DocumentClient but saves oversize files in S3.",
@@ -9,8 +9,7 @@
     "test": "jest src",
     "build": "rm -rf build && mkdir build && yarn tsc",
     "build:link": "yarn build && cd build && yarn link",
-    "lint": "tslint --project tsconfig.lint.json",
-    "publish": "np --no-cleanup"
+    "lint": "tslint --project tsconfig.lint.json"
   },
   "repository": {
     "type": "git",
