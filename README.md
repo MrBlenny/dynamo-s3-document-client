@@ -124,8 +124,6 @@ await dynamoS3DocumentClient.get({
 
 ### Update a file.
 
-Note the `getNewItem` function which returns the new state of the content.
-
 There are 4 different types of update depending on how the file size changes. Keep these in mind if you are mocking your S3 responses. These processes are:
 
 * `stays-in-dynamo`        - Update Dynamo
@@ -133,7 +131,7 @@ There are 4 different types of update depending on how the file size changes. Ke
 * `move-from-dynamo-to-s3` - Put to Dynamo & Put to S3
 * `move-from-s3-to-dynamo` - Put to Dynamo & Delete from S3
 
-Usage:
+Note the `getNewItem` function which returns the new state of the content.
 
 ```ts
 const getNewItem = currentItem => ({
