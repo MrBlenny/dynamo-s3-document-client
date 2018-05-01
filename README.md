@@ -68,6 +68,8 @@ export interface IDynamoS3DocumentClientConfig {
   pathPath?: string;
   /** Maximum Document size to save to S3 */
   maxDocumentSize?: number;
+  /** Debug console logs */
+  debug?: boolean;
 };
 ```
 
